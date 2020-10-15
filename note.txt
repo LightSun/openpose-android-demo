@@ -1,0 +1,41 @@
+
+======== vim3-MIPI camera =======================
+//https://docs.khadas.com/zh-cn/vim3/HowToUseMIPICamera.html
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/core/core.hpp>
+#include <iostream>
+#include <string>
+using
+namespace  cv;
+
+using
+namespace  std;
+
+int main(int argc, char** argv)
+{
+	int count=100;
+	string str = argv[1];
+	string res=str.substr(10);
+	VideoCapture capture(stoi(res));
+        capture.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
+	capture.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
+	while (count)
+	{
+		Mat frame;
+		capture >> frame;
+
+		if (frame.empty()) {
+			break;
+		}
+		int h = frame.rows;
+		int w = frame.cols;
+		const char *name = "video";
+		cvNamedWindow(name, 0);
+		cvResizeWindow(name, w / 1, h / 1);
+		imshow(name, frame);
+		waitKey(30);
+		count--;
+	}
+	return 0;
+}
