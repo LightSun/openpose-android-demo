@@ -24,7 +24,8 @@ limitations under the License.
 #include "yuv2rgb.h"
 
 #define IMAGEUTILS_METHOD(METHOD_NAME) \
-  Java_org_tensorflow_demo_env_ImageUtils_##METHOD_NAME  // NOLINT
+  Java_com_ricardotejo_openpose_env_ImageUtils_##METHOD_NAME
+  //Java_org_tensorflow_demo_env_ImageUtils_##METHOD_NAME  // NOLINT
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,9 +55,6 @@ IMAGEUTILS_METHOD(convertRGB565ToYUV420SP)(
     JNIEnv* env, jclass clazz, jbyteArray input, jbyteArray output,
     jint width, jint height);
 
-#ifdef __cplusplus
-}
-#endif
 
 JNIEXPORT void JNICALL
 IMAGEUTILS_METHOD(convertYUV420SPToARGB8888)(
@@ -161,3 +159,7 @@ IMAGEUTILS_METHOD(convertRGB565ToYUV420SP)(
   env->ReleaseByteArrayElements(input, i, JNI_ABORT);
   env->ReleaseByteArrayElements(output, o, 0);
 }
+
+#ifdef __cplusplus
+}
+#endif

@@ -82,7 +82,7 @@ public class LegacyCameraConnectionFragment extends Fragment {
 
                     try {
                         Camera.Parameters parameters = camera.getParameters();
-                        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+                        //parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
 
                         List<Camera.Size> cameraSizes = parameters.getSupportedPreviewSizes();
                         Size[] sizes = new Size[cameraSizes.size()];
@@ -97,8 +97,10 @@ public class LegacyCameraConnectionFragment extends Fragment {
                         camera.setDisplayOrientation(90);
                         camera.setParameters(parameters);
                         camera.setPreviewTexture(texture);
-                    } catch (IOException exception) {
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
                         camera.release();
+                        return;
                     }
 
                     camera.setPreviewCallbackWithBuffer(imageListener);

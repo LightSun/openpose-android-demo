@@ -265,6 +265,27 @@ public class MocapActivity extends CameraActivity implements OnImageAvailableLis
 
     private Integer HUMAN_RADIUS = 3;
 
+    /**
+     *  COORD Nose, NULL, NULL
+     * MocapActivity: COORD Neck, 0.326087, 0.521739
+     * MocapActivity: COORD RShoulder, 0.369565, 0.543478
+     * MocapActivity: COORD RElbow, 0.369565, 0.630435
+     * MocapActivity: COORD RWrist, 0.391304, 0.673913
+     * MocapActivity: COORD LShoulder, 0.304348, 0.521739
+     * MocapActivity: COORD LElbow, 0.347826, 0.608696
+     * MocapActivity: COORD LWrist, NULL, NULL
+     * MocapActivity: COORD RHip, 0.369565, 0.673913
+     * MocapActivity: COORD RKnee, NULL, NULL
+     * MocapActivity: COORD RAnkle, NULL, NULL
+     * MocapActivity: COORD LHip, 0.347826, 0.652174
+     * MocapActivity: COORD LKnee, NULL, NULL
+     * MocapActivity: COORD LAnkle, NULL, NULL
+     * MocapActivity: COORD REye, NULL, NULL
+     * MocapActivity: COORD LEye, NULL, NULL
+     * MocapActivity: COORD REar, 0.347826, 0.478261
+     * MocapActivity: COORD LEar, NULL, NULL
+     * MocapActivity: COORD Background, NULL, NULL
+     */
     private void draw_humans(Canvas canvas, List<TensorFlowPoseDetector.Human> human_list) {
         //def draw_humans(img, human_list):
         // image_h, image_w = img_copied.shape[:2]
