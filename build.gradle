@@ -90,6 +90,7 @@ android {
 dependencies {
     implementation(name:'tensorflow', ext:'aar')
 
-   // implementation 'org.tensorflow:tensorflow-android:1.7.0'
+   // implementation 'org.tensorflow:tensorflow-android:1.7.0' //openpose用的这个
+    //implementation 'org.tensorflow:libtensorflow:1.15.0' //这个是标准的tensorflow.
 }
 
