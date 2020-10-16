@@ -24,6 +24,8 @@ allprojects {
 
 apply plugin: 'com.android.application'
 
+def useNative = true
+
 android {
     compileSdkVersion 23
 
@@ -44,7 +46,7 @@ android {
             renderscript.srcDirs = ['src']
             res.srcDirs = ['res']
             assets.srcDirs = ['assets']
-            jniLibs.srcDirs = ['libs']
+            //jniLibs.srcDirs = ['libs']
 
         }
 
@@ -54,6 +56,34 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 23
+
+        multiDexEnabled true
+        if(useNative){
+            externalNativeBuild {
+                //-DSK_API
+                cmake {
+                    cppFlags "-std=c++14 -O0"
+                    cFlags "-O0"
+                }
+            }
+        }
+        if(useNative) {
+            ndk {
+                // stl "gnustl_shared"
+                abiFilters "arm64-v8a", "armeabi-v7a"
+            }
+        }
+    }
+    if(useNative) {
+        externalNativeBuild {
+            cmake {
+                path "jni/CMakeLists.txt"
+            }
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
