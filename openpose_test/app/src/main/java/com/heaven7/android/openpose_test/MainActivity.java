@@ -17,6 +17,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mOCM = new OpenposeCameraManager(this, R.id.container);
+        mOCM.setDesiredPreviewFrameSize(1920 , 1080);
         mOCM.show();
     }
 

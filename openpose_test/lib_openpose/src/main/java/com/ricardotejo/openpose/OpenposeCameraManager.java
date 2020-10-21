@@ -32,7 +32,6 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     private static final String MP_MODEL_FILE = "file:///android_asset/frozen_person_model.pb";
 
     private static final boolean MAINTAIN_ASPECT = true;
-    private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
 
     private static final float TEXT_SIZE_DIP = 10;
     private static final int HUMAN_RADIUS = 3;
@@ -256,10 +255,6 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         //    return img_copied
     }
 
-    @Override
-    protected Size getDesiredPreviewFrameSize() {
-        return DESIRED_PREVIEW_SIZE;
-    }
     @Override
     public void setDebug(final boolean debug) {
         super.setDebug(debug);

@@ -33,6 +33,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     private static final int PERMISSIONS_REQUEST = 1;
     private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
     private static final String PERMISSION_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+    private static final Size DESIRED_PREVIEW_SIZE = new Size(640, 480);
 
     protected final AppCompatActivity mActivity;
     private final int mContainerId;
@@ -53,6 +54,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     private Runnable imageConverter;
 
     private boolean mPermissionRequesting;
+    private Size mDesiredPreviewSize;
 
     public AbsOpenposeCameraManager(AppCompatActivity ac, int mVg_container) {
         this.mContainerId = mVg_container;
@@ -66,41 +68,13 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
             requestPermission();
         }
     }
-    private void showInternal(){
-        mPermissionRequesting = false;
-        LOGGER.d("start show camera fragment");
-        Fragment fragment = setFragment();
-        mActivity.getFragmentManager().beginTransaction()
-                .replace(mContainerId, fragment, fragment.getClass().getSimpleName())
-                .commit();
+    public void setDesiredPreviewFrameSize(int width, int height){
+        mDesiredPreviewSize = new Size(width, height);
     }
 
-    private Fragment setFragment() {
-        String cameraId = chooseCamera();
-
-        Fragment fragment;
-        if (useCamera2API) {
-            CameraConnectionFragment camera2Fragment =
-                    CameraConnectionFragment.newInstance(
-                            new CameraConnectionFragment.ConnectionCallback() {
-                                @Override
-                                public void onPreviewSizeChosen(final Size size, final int rotation) {
-                                    previewHeight = size.getHeight();
-                                    previewWidth = size.getWidth();
-                                    AbsOpenposeCameraManager.this.onPreviewSizeChosen(size, rotation);
-                                }
-                            },
-                            this,
-                            getDesiredPreviewFrameSize());
-
-            camera2Fragment.setCamera(cameraId);
-            fragment = camera2Fragment;
-        } else {
-            fragment = new LegacyCameraConnectionFragment(this, getDesiredPreviewFrameSize());
-        }
-        return fragment;
+    protected Size getDesiredPreviewFrameSize(){
+        return mDesiredPreviewSize != null ? mDesiredPreviewSize : DESIRED_PREVIEW_SIZE;
     }
-
     @Override
     public void onPreviewFrame(final byte[] bytes, final Camera camera) {
         if (isProcessingFrame) {
@@ -257,7 +231,6 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
 
     protected abstract void onPreviewSizeChosen(final Size size, final int rotation);
 
-    protected abstract Size getDesiredPreviewFrameSize();
     //---------------------------- privates ---------------------
 
     protected void fillBytes(final Image.Plane[] planes, final byte[][] yuvBytes) {
@@ -369,6 +342,40 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
             LOGGER.e(e, "Not allowed to access camera");
         }
         return null;
+    }
+    private void showInternal(){
+        mPermissionRequesting = false;
+        LOGGER.d("start show camera fragment");
+        Fragment fragment = setFragment();
+        mActivity.getFragmentManager().beginTransaction()
+                .replace(mContainerId, fragment, fragment.getClass().getSimpleName())
+                .commit();
+    }
+
+    private Fragment setFragment() {
+        String cameraId = chooseCamera();
+
+        Fragment fragment;
+        if (useCamera2API) {
+            CameraConnectionFragment camera2Fragment =
+                    CameraConnectionFragment.newInstance(
+                            new CameraConnectionFragment.ConnectionCallback() {
+                                @Override
+                                public void onPreviewSizeChosen(final Size size, final int rotation) {
+                                    previewHeight = size.getHeight();
+                                    previewWidth = size.getWidth();
+                                    AbsOpenposeCameraManager.this.onPreviewSizeChosen(size, rotation);
+                                }
+                            },
+                            this,
+                            getDesiredPreviewFrameSize());
+
+            camera2Fragment.setCamera(cameraId);
+            fragment = camera2Fragment;
+        } else {
+            fragment = new LegacyCameraConnectionFragment(this, getDesiredPreviewFrameSize());
+        }
+        return fragment;
     }
 
 }
