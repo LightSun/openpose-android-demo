@@ -64,7 +64,7 @@ public class TensorFlowPoseDetector implements Classifier {
         try {
             c.inferenceInterface = new TensorFlowInferenceInterface(assetManager, modelFilename);
         } catch (RuntimeException re) {
-            Log.e(TAG, "CAUSE " + re.getCause().getMessage(), re);
+            re.printStackTrace();
         }
         // The shape of the output is [N, NUM_CLASSES], where N is the batch size.
 

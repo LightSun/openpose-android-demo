@@ -13,6 +13,7 @@ import android.util.Size;
 import android.util.TypedValue;
 import android.view.Surface;
 
+import androidx.annotation.IdRes;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.ricardotejo.openpose.env.BorderedText;
@@ -55,7 +56,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     private BorderedText borderedText;
 
-    public OpenposeCameraManager(AppCompatActivity ac, int mVg_container) {
+    public OpenposeCameraManager(AppCompatActivity ac, @IdRes int mVg_container) {
         super(ac, mVg_container);
     }
 

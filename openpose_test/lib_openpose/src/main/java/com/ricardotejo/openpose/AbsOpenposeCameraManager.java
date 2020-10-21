@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
+import android.util.Log;
 import android.util.Size;
 import android.widget.Toast;
 
@@ -28,14 +29,13 @@ import java.nio.ByteBuffer;
 
 public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAvailableListener, Camera.PreviewCallback {
 
-    protected final AppCompatActivity mActivity;
-    private final int mContainerId;
-
     protected static final Logger LOGGER = new Logger();
     private static final int PERMISSIONS_REQUEST = 1;
     private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
     private static final String PERMISSION_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
+    protected final AppCompatActivity mActivity;
+    private final int mContainerId;
     private boolean debug = true;
 
     private Handler handler;
@@ -52,25 +52,30 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     private Runnable postInferenceCallback;
     private Runnable imageConverter;
 
+    private boolean mPermissionRequesting;
+
     public AbsOpenposeCameraManager(AppCompatActivity ac, int mVg_container) {
         this.mContainerId = mVg_container;
         this.mActivity = ac;
+    }
 
+    public void show(){
         if (hasPermission()) {
-            setFragment();
+            showInternal();
         } else {
             requestPermission();
         }
     }
-
-    public void show(){
+    private void showInternal(){
+        mPermissionRequesting = false;
+        LOGGER.d("start show camera fragment");
         Fragment fragment = setFragment();
         mActivity.getFragmentManager().beginTransaction()
                 .replace(mContainerId, fragment, fragment.getClass().getSimpleName())
                 .commit();
     }
 
-    protected Fragment setFragment() {
+    private Fragment setFragment() {
         String cameraId = chooseCamera();
 
         Fragment fragment;
@@ -206,26 +211,33 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     //--------------------------- called by caller --------------------------------------------
     public synchronized void onResume() {
         LOGGER.d("onResume " + this);
-        handlerThread = new HandlerThread("inference");
-        handlerThread.start();
-        handler = new Handler(handlerThread.getLooper());
+        if(handlerThread == null){
+            handlerThread = new HandlerThread("inference");
+            handlerThread.start();
+            handler = new Handler(handlerThread.getLooper());
+        }
     }
 
     public synchronized void onPause() {
-        LOGGER.d("onPause " + this);
+        LOGGER.d( "onPause " + this);
 
+        if(mPermissionRequesting){
+            return;
+        }
         if (!mActivity.isFinishing()) {
             LOGGER.d("Requesting finish");
             mActivity.finish();
         }
 
-        handlerThread.quitSafely();
-        try {
-            handlerThread.join();
-            handlerThread = null;
-            handler = null;
-        } catch (final InterruptedException e) {
-            LOGGER.e(e, "Exception!");
+        if(handlerThread != null){
+            handlerThread.quitSafely();
+            try {
+                handlerThread.join();
+                handlerThread = null;
+                handler = null;
+            } catch (final InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
     public void onRequestPermissionsResult(
@@ -234,7 +246,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED
                     && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                setFragment();
+                showInternal();
             } else {
                 requestPermission();
             }
@@ -314,9 +326,12 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
             if (mActivity.shouldShowRequestPermissionRationale(PERMISSION_CAMERA) ||
                     mActivity.shouldShowRequestPermissionRationale(PERMISSION_STORAGE)) {
                 Toast.makeText(mActivity,
-                        "Camera AND storage permission are required for this demo", Toast.LENGTH_LONG).show();
+                        R.string.request_permission, Toast.LENGTH_LONG).show();
             }
+            mPermissionRequesting = true;
             mActivity.requestPermissions(new String[]{PERMISSION_CAMERA, PERMISSION_STORAGE}, PERMISSIONS_REQUEST);
+        }else {
+            mPermissionRequesting = false;
         }
     }
 

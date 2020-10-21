@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="description_info">Info</string>
-    <string name="request_permission">This sample needs camera permission.</string>
+    <string name="request_permission">需要相机和存储权限</string>
     <string name="camera_error">This device doesn\'t support Camera2 API.</string>
 </resources>
