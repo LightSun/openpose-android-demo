@@ -291,7 +291,8 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         }
     }
 
-    public void onSetDebug(final boolean debug) {
+    public void setDebug(final boolean debug) {
+        this.debug = debug;
     }
     protected void readyForNextImage() {
         if (postInferenceCallback != null) {

@@ -261,7 +261,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         return DESIRED_PREVIEW_SIZE;
     }
     @Override
-    public void onSetDebug(final boolean debug) {
+    public void setDebug(final boolean debug) {
+        super.setDebug(debug);
         detector.enableStatLogging(debug);
     }
     protected int getScreenOrientation() {
