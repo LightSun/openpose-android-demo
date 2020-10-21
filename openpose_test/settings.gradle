@@ -1,0 +1,2 @@
+rootProject.name='openpose_test'
+include ':app','lib_openpose'
