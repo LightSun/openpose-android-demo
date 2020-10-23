@@ -315,7 +315,7 @@ public class TensorFlowPoseDetector implements Classifier {
         return result;
     }
 
-    class Coord {
+    public static class Coord {
         public float x;
         public float y;
 
@@ -551,9 +551,8 @@ public class TensorFlowPoseDetector implements Classifier {
         return humans;
     }
 
-    class Human {
+    static class Human {
         Map<Integer, Coord> parts = new HashMap<>();
-
     }
 
     private Human connections_to_human(List<Connection> connections, float[] heatMat, int w) {
@@ -578,7 +577,7 @@ public class TensorFlowPoseDetector implements Classifier {
         return human;
     }
 
-    class Connection {
+    static class Connection {
         public float score;
         public Coord c1; // (x1, y1),
         public Coord c2; // (x2, y2),
@@ -587,7 +586,7 @@ public class TensorFlowPoseDetector implements Classifier {
         public String[] uPartIdx; // ('{}-{}-{}'.format(x1, y1, partIdx1) , '{}-{}-{}'.format(x2, y2, partIdx2))
     }
 
-    class ScoreOutput {
+    static class ScoreOutput {
         public float score;
         public int count;
 
