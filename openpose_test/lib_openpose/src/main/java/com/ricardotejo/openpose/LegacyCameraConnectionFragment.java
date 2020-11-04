@@ -17,7 +17,6 @@ package com.ricardotejo.openpose;
  */
 
 import android.annotation.SuppressLint;
-import android.app.Fragment;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
@@ -32,7 +31,8 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 
-import java.io.IOException;
+import androidx.fragment.app.Fragment;
+
 import java.util.List;
 
 import com.heaven7.android.lib_openpose.R;
@@ -40,7 +40,7 @@ import com.ricardotejo.openpose.env.ImageUtils;
 import com.ricardotejo.openpose.env.Logger;
 
 @SuppressLint("ValidFragment")
-public class LegacyCameraConnectionFragment extends Fragment {
+public class LegacyCameraConnectionFragment extends Fragment implements ICameraDelegate{
     private Camera camera;
     private static final Logger LOGGER = new Logger();
     private Camera.PreviewCallback imageListener;
@@ -160,6 +160,15 @@ public class LegacyCameraConnectionFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        resume();
+    }
+
+    @Override
+    public void onPause() {
+        pause();
+        super.onPause();
+    }
+    public void resume(){
         startBackgroundThread();
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
@@ -172,32 +181,32 @@ public class LegacyCameraConnectionFragment extends Fragment {
             textureView.setSurfaceTextureListener(surfaceTextureListener);
         }
     }
-
-    @Override
-    public void onPause() {
+    public void pause(){
         stopCamera();
         stopBackgroundThread();
-        super.onPause();
     }
-
     /**
      * Starts a background thread and its {@link Handler}.
      */
     private void startBackgroundThread() {
-        backgroundThread = new HandlerThread("CameraBackground");
-        backgroundThread.start();
+        if(backgroundThread == null){
+            backgroundThread = new HandlerThread("CameraBackground");
+            backgroundThread.start();
+        }
     }
 
     /**
      * Stops the background thread and its {@link Handler}.
      */
     private void stopBackgroundThread() {
-        backgroundThread.quitSafely();
-        try {
-            backgroundThread.join();
-            backgroundThread = null;
-        } catch (final InterruptedException e) {
-            LOGGER.e(e, "Exception!");
+        if(backgroundThread != null){
+            backgroundThread.quitSafely();
+            try {
+                backgroundThread.join();
+                backgroundThread = null;
+            } catch (final InterruptedException e) {
+                LOGGER.e(e, "Exception!");
+            }
         }
     }
 

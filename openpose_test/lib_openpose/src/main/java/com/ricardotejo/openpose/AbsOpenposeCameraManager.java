@@ -1,7 +1,6 @@
 package com.ricardotejo.openpose;
 
 import android.Manifest;
-import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
@@ -15,17 +14,18 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
-import android.util.Log;
 import android.util.Size;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 
 import com.heaven7.android.lib_openpose.R;
 import com.ricardotejo.openpose.env.ImageUtils;
 import com.ricardotejo.openpose.env.Logger;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
 public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAvailableListener, Camera.PreviewCallback {
 
@@ -183,6 +183,22 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         Trace.endSection();
     }
     //--------------------------- called by caller --------------------------------------------
+    public void pause(){
+        List<Fragment> fragments = mActivity.getSupportFragmentManager().getFragments();
+        for (Fragment f : fragments){
+           if(f instanceof ICameraDelegate){
+               ((ICameraDelegate) f).pause();
+           }
+        }
+    }
+    public void resume(){
+        List<Fragment> fragments = mActivity.getSupportFragmentManager().getFragments();
+        for (Fragment f : fragments){
+            if(f instanceof ICameraDelegate){
+                ((ICameraDelegate) f).resume();
+            }
+        }
+    }
     public synchronized void onResume() {
         LOGGER.d("onResume " + this);
         if(handlerThread == null){
@@ -342,7 +358,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         mPermissionRequesting = false;
         LOGGER.d("start show camera fragment");
         Fragment fragment = setFragment();
-        mActivity.getFragmentManager().beginTransaction()
+        mActivity.getSupportFragmentManager().beginTransaction()
                 .replace(mContainerId, fragment, fragment.getClass().getSimpleName())
                 .commit();
     }

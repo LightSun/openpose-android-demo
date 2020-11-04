@@ -21,7 +21,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
@@ -52,6 +51,9 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+
+import androidx.fragment.app.Fragment;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,7 +67,7 @@ import com.ricardotejo.openpose.env.Logger;
 //import com.ricardotejo.openpose.R; // Explicit import needed for internal Google builds.
 
 @SuppressLint("ValidFragment")
-public class CameraConnectionFragment extends Fragment {
+public class CameraConnectionFragment extends Fragment implements ICameraDelegate{
   private static final Logger LOGGER = new Logger();
 
   /**
@@ -336,8 +338,20 @@ public class CameraConnectionFragment extends Fragment {
   @Override
   public void onResume() {
     super.onResume();
-    startBackgroundThread();
+    resume();
+  }
 
+  @Override
+  public void onPause() {
+    pause();
+    super.onPause();
+  }
+
+  public void setCamera(String cameraId) {
+    this.cameraId = cameraId;
+  }
+  public void resume(){
+    startBackgroundThread();
     // When the screen is turned off and turned back on, the SurfaceTexture is already
     // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
     // a camera and start preview from here (otherwise, we wait until the surface is ready in
@@ -348,16 +362,9 @@ public class CameraConnectionFragment extends Fragment {
       textureView.setSurfaceTextureListener(surfaceTextureListener);
     }
   }
-
-  @Override
-  public void onPause() {
+  public void pause(){
     closeCamera();
     stopBackgroundThread();
-    super.onPause();
-  }
-
-  public void setCamera(String cameraId) {
-    this.cameraId = cameraId;
   }
 
   /**
@@ -459,8 +466,10 @@ public class CameraConnectionFragment extends Fragment {
    * Starts a background thread and its {@link Handler}.
    */
   private void startBackgroundThread() {
-    backgroundThread = new HandlerThread("ImageListener");
-    backgroundThread.start();
+    if(backgroundThread == null){
+      backgroundThread = new HandlerThread("ImageListener");
+      backgroundThread.start();
+    }
     backgroundHandler = new Handler(backgroundThread.getLooper());
   }
 
