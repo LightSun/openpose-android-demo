@@ -132,7 +132,7 @@ public class TensorFlowPoseDetector implements Classifier {
 
         // Copy the input data into TensorFlow.
         Trace.beginSection("feed");
-        inferenceInterface.feed(inputName, floatValues, 1, inputSize, inputSize, 3);
+        inferenceInterface.feed(inputName, floatValues, 1, inputSize, inputSize, 3); //nhwc
         Trace.endSection();
 
         // Run the inference call.
@@ -204,13 +204,12 @@ public class TensorFlowPoseDetector implements Classifier {
         return Color.rgb(v, 0, 0);
     }
 
-    float NMS_Threshold = 0.1f;
-    int InterMinAbove_Threshold = 6;
-    float Inter_Threashold = 0.1f;
-    int Min_Subset_Cnt = 4;
-    float Min_Subset_Score = 0.8f;
-    int Max_Human = 96;
-
+    private float NMS_Threshold = 0.1f;
+    private int InterMinAbove_Threshold = 6;
+    private float Inter_Threashold = 0.1f;
+    private int Min_Subset_Cnt = 4;
+    private float Min_Subset_Score = 0.8f;
+    private int Max_Human = 96;
 
     private Bitmap debugOutput(float[] mat, int[] shape) {
         int w = shape[0];

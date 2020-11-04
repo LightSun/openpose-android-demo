@@ -198,11 +198,6 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         if(mPermissionRequesting){
             return;
         }
-        if (!mActivity.isFinishing()) {
-            LOGGER.d("Requesting finish");
-            mActivity.finish();
-        }
-
         if(handlerThread != null){
             handlerThread.quitSafely();
             try {
