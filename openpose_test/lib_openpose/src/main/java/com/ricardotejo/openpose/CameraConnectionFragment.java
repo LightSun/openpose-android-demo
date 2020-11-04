@@ -20,7 +20,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.Configuration;
@@ -52,6 +51,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
@@ -420,6 +420,7 @@ public class CameraConnectionFragment extends Fragment implements ICameraDelegat
   /**
    * Opens the camera specified by {@link CameraConnectionFragment#cameraId}.
    */
+  @SuppressLint("MissingPermission")
   private void openCamera(final int width, final int height) {
     setUpCameraOutputs();
     configureTransform(width, height);
