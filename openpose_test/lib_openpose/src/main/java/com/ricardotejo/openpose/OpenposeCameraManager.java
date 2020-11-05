@@ -199,7 +199,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
     }
 
-    private void draw_humans(Canvas canvas, List<Human> human_list) {
+    public void draw_humans(Canvas canvas, List<Human> human_list) {
         //def draw_humans(img, human_list):
         // image_h, image_w = img_copied.shape[:2]
         int cp = Common.CocoPart.values().length;
@@ -274,5 +274,10 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
             default:
                 return 0;
         }
+    }
+
+    public interface DrawCallback{
+        int getPointColor(int id);
+        int getConcatColor(int id1, int id2);
     }
 }

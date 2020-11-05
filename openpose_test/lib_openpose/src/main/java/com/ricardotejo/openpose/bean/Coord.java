@@ -17,4 +17,14 @@ public class Coord {
         this.score = score;
         this.count = count;
     }
+
+    @Override
+    public String toString() {
+        return "Coord{" +
+                "x=" + x +
+                ", y=" + y +
+                ", score=" + score +
+                ", count=" + count +
+                '}';
+    }
 }
