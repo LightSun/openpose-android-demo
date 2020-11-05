@@ -3,6 +3,7 @@ package com.ricardotejo.openpose;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -44,7 +45,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     private boolean useCamera2API;
     private boolean isProcessingFrame = false;
     private byte[][] yuvBytes = new byte[3][];
-    private int[] rgbBytes = null;
+    private int[] rgbBytes = null; //len = w*h
     private int yRowStride;
 
     protected int previewWidth = 0;

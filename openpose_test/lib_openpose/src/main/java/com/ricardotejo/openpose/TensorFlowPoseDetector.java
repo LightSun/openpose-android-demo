@@ -8,6 +8,9 @@ import android.graphics.RectF;
 import android.os.Trace;
 import android.util.Log;
 
+import com.ricardotejo.openpose.bean.Coord;
+import com.ricardotejo.openpose.bean.Human;
+
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 
 import java.util.ArrayList;
@@ -314,16 +317,6 @@ public class TensorFlowPoseDetector implements Classifier {
         return result;
     }
 
-    public static class Coord {
-        public float x;
-        public float y;
-
-        Coord(float x, float y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
-
     private List<Coord> findCoords(float[] img, int w, float threshold) {
         List<Coord> cc = new ArrayList<>();
 
@@ -550,10 +543,6 @@ public class TensorFlowPoseDetector implements Classifier {
         return humans;
     }
 
-    static class Human {
-        Map<Integer, Coord> parts = new HashMap<>();
-    }
-
     private Human connections_to_human(List<Connection> connections, float[] heatMat, int w) {
         //def connections_to_human(connections, heatMat):
 
@@ -564,8 +553,8 @@ public class TensorFlowPoseDetector implements Classifier {
         for (Connection conn : connections) {
             //point_dict[conn['partIdx'][0]] = (conn['partIdx'][0], (conn['c1'][0] / heatMat.shape[2], conn['c1'][1] / heatMat.shape[1]), heatMat[conn['partIdx'][0], conn['c1'][1], conn['c1'][0]])
             //point_dict[conn['partIdx'][1]] = (conn['partIdx'][1], (conn['c2'][0] / heatMat.shape[2], conn['c2'][1] / heatMat.shape[1]), heatMat[conn['partIdx'][1], conn['c2'][1], conn['c2'][0]])
-            human.parts.put(conn.partIdx[0], new Coord(conn.c1.x / w, conn.c1.y / w));
-            human.parts.put(conn.partIdx[1], new Coord(conn.c2.x / w, conn.c2.y / w));
+            human.parts.put(conn.partIdx[0], new Coord(conn.c1.x / w, conn.c1.y / w, conn.score, conn.count));
+            human.parts.put(conn.partIdx[1], new Coord(conn.c2.x / w, conn.c2.y / w, conn.score, conn.count));
 
             // info
             //0: conn['partIdx'][0],
@@ -578,6 +567,7 @@ public class TensorFlowPoseDetector implements Classifier {
 
     static class Connection {
         public float score;
+        public int count;
         public Coord c1; // (x1, y1),
         public Coord c2; // (x2, y2),
         public int[] idx; // (idx1, idx2),
@@ -647,6 +637,7 @@ public class TensorFlowPoseDetector implements Classifier {
                 //    'uPartIdx': ('{}-{}-{}'.format(x1, y1, partIdx1), '{}-{}-{}'.format(x2, y2, partIdx2))
                 //})
                 Connection cnn = new Connection();
+                cnn.count = scoreCount.count;
                 cnn.score = scoreCount.score;
                 cnn.c1 = new Coord(x1, y1);
                 cnn.c2 = new Coord(x2, y2);

@@ -5,6 +5,8 @@ package com.ricardotejo.openpose;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 
+import com.ricardotejo.openpose.bean.Human;
+
 import java.util.List;
 
 /**
@@ -16,7 +18,7 @@ public interface Classifier {
      */
     class Recognition {
         // TODO: part, fromXY, toXY
-        public List<TensorFlowPoseDetector.Human> humans;
+        public List<Human> humans;
         public Bitmap heat;
         public Bitmap pose;
         /**

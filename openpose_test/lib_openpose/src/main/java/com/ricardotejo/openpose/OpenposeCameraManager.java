@@ -16,6 +16,8 @@ import android.view.Surface;
 import androidx.annotation.IdRes;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.ricardotejo.openpose.bean.Coord;
+import com.ricardotejo.openpose.bean.Human;
 import com.ricardotejo.openpose.env.BorderedText;
 import com.ricardotejo.openpose.env.ImageUtils;
 
@@ -25,11 +27,11 @@ import java.util.Vector;
 
 public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
-    private static final int MP_INPUT_SIZE = 368;
-    private static final String MP_INPUT_NAME = "image";
-    private static final String MP_OUTPUT_L1 = "Openpose/MConv_Stage6_L1_5_pointwise/BatchNorm/FusedBatchNorm";
-    private static final String MP_OUTPUT_L2 = "Openpose/MConv_Stage6_L2_5_pointwise/BatchNorm/FusedBatchNorm";
-    private static final String MP_MODEL_FILE = "file:///android_asset/frozen_person_model.pb";
+    /*private*/ static final int MP_INPUT_SIZE = 368;
+    /*private*/ static final String MP_INPUT_NAME = "image";
+    /*private*/ static final String MP_OUTPUT_L1 = "Openpose/MConv_Stage6_L1_5_pointwise/BatchNorm/FusedBatchNorm";
+    /*private*/ static final String MP_OUTPUT_L2 = "Openpose/MConv_Stage6_L2_5_pointwise/BatchNorm/FusedBatchNorm";
+    /*private*/ static final String MP_MODEL_FILE = "file:///android_asset/frozen_person_model.pb";
 
     private static final boolean MAINTAIN_ASPECT = true;
 
@@ -136,8 +138,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                         previewWidth, previewHeight,
                         cropSize, cropSize,
                         sensorOrientation, MAINTAIN_ASPECT);
+        //mapVectors等函数是映射成需要的坐标
         cropToFrameTransform = new Matrix();
-        frameToCropTransform.invert(cropToFrameTransform);
+        frameToCropTransform.invert(cropToFrameTransform);//逆矩阵
 
         if(isDebug()){
             addCallback(
@@ -170,7 +173,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                             //matrix.postTranslate(
                             //        canvas.getWidth() - copy.getWidth() * scaleFactor,
                             //        canvas.getHeight() - copy.getHeight() * scaleFactor);
-                            canvas.drawBitmap(copy, matrix, new Paint());
+                            canvas.drawBitmap(copy, matrix, null);
 
                             final Vector<String> lines = new Vector<String>();
                             if (detector != null) {
@@ -196,16 +199,17 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
     }
 
-    private void draw_humans(Canvas canvas, List<TensorFlowPoseDetector.Human> human_list) {
+    private void draw_humans(Canvas canvas, List<Human> human_list) {
         //def draw_humans(img, human_list):
         // image_h, image_w = img_copied.shape[:2]
         int cp = Common.CocoPart.values().length;
         int image_w = canvas.getWidth();
         int image_h = canvas.getHeight();
 
+        Paint paint = new Paint();
         //    for human in human_list:
-        for (TensorFlowPoseDetector.Human human : human_list) {
-            Point[] centers = new Point[cp];
+        for (Human human : human_list) {
+            Point[] centers = new Point[cp]; //识别到的人体关键点坐标Point. 数组index代表关键点的id.
             //part_idxs = human.keys()
             Set<Integer> part_idxs = human.parts.keySet();
 
@@ -219,14 +223,14 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                     continue;
                 }
                 //part_coord = human[i][1]
-                TensorFlowPoseDetector.Coord part_coord = human.parts.get(i.index);
+                Coord part_coord = human.parts.get(i.index);
                 //center = (int(part_coord[0] * image_w + 0.5), int(part_coord[1] * image_h + 0.5))
+                //映射到canvas的坐标
                 Point center = new Point((int) (part_coord.x * image_w + 0.5f), (int) (part_coord.y * image_h + 0.5f));
                 //centers[i] = center
                 centers[i.index] = center;
 
                 //cv2.circle(img_copied, center, 3, CocoColors[i], thickness=3, lineType=8, shift=0)
-                Paint paint = new Paint();
                 paint.setColor(Color.rgb(Common.CocoColors[i.index][0], Common.CocoColors[i.index][1], Common.CocoColors[i.index][2]));
                 paint.setStyle(Paint.Style.FILL);
                 canvas.drawCircle(center.x, center.y, HUMAN_RADIUS, paint);
@@ -234,7 +238,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                 LOGGER.i("COORD %s, %f, %f", i.toString(), part_coord.x, part_coord.y);
             }
 
-            //# draw line
+            //# draw line 连接的关键点.
             //for pair_order, pair in enumerate(CocoPairsRender):
             for (int pair_order = 0; pair_order < Common.CocoPairsRender.length; pair_order++) {
                 int[] pair = Common.CocoPairsRender[pair_order];
@@ -244,7 +248,6 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                 }
 
                 //img_copied = cv2.line(img_copied, centers[pair[0]], centers[pair[1]], CocoColors[pair_order], 3)
-                Paint paint = new Paint();
                 paint.setColor(Color.rgb(Common.CocoColors[pair_order][0], Common.CocoColors[pair_order][1], Common.CocoColors[pair_order][2]));
                 paint.setStrokeWidth(HUMAN_RADIUS);
                 paint.setStyle(Paint.Style.STROKE);

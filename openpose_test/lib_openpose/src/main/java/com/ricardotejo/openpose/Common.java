@@ -2,7 +2,7 @@
 
 package com.ricardotejo.openpose;
 
-public class Common {
+public final class Common {
 
     public enum CocoPart
 
