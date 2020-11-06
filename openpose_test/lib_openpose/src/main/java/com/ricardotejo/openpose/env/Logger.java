@@ -15,6 +15,7 @@ limitations under the License.
 
 package com.ricardotejo.openpose.env;
 
+import android.annotation.SuppressLint;
 import android.util.Log;
 
 import java.util.HashSet;
@@ -23,6 +24,7 @@ import java.util.Set;
 /**
  * Wrapper for the platform log function, allows convenient message prefixing and log disabling.
  */
+@SuppressLint("LogTagMismatch")
 public final class Logger {
   private static final String DEFAULT_TAG = "tensorflow";
   private static final int DEFAULT_MIN_LOG_LEVEL = Log.DEBUG;
@@ -93,7 +95,7 @@ public final class Logger {
   }
 
   public boolean isLoggable(final int logLevel) {
-    return logLevel >= minLogLevel || Log.isLoggable(tag, logLevel);
+    return logLevel >= minLogLevel /*|| Log.isLoggable(tag, logLevel)*/;
   }
 
   /**

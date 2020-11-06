@@ -11,18 +11,23 @@ public final class Common {
     {
         Nose(0), //鼻子
         Neck(1), //颈部
+
         RShoulder(2), //右肩部
         RElbow(3),    //右手肘
         RWrist(4),    //右手腕
+
         LShoulder(5), //左肩部
         LElbow(6),    //左手肘
         LWrist(7),    //左手腕
+
         RHip(8),      //右臀围
         RKnee(9),     //右膝盖
         RAnkle(10),   //右脚裸
+
         LHip(11),
         LKnee(12),
         LAnkle(13),
+
         REye(14),     //右眼
         LEye(15),
         REar(16),     //右耳

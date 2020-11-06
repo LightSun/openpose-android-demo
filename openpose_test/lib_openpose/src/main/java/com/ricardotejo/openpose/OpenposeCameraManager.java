@@ -39,7 +39,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     /*private*/ static final String MP_INPUT_NAME = "image";
     /*private*/ static final String MP_OUTPUT_L1 = "Openpose/MConv_Stage6_L1_5_pointwise/BatchNorm/FusedBatchNorm";
     /*private*/ static final String MP_OUTPUT_L2 = "Openpose/MConv_Stage6_L2_5_pointwise/BatchNorm/FusedBatchNorm";
-    /*private*/ static final String MP_MODEL_FILE = "file:///android_asset/frozen_person_model.pb";
+    //static final String MP_MODEL_FILE = "file:///android_asset/frozen_person_model.pb";
+    static final String MP_MODEL_FILE = "file:///android_asset/graph_opt.pb"; //识别率比 frozen_person_model好
 
     private static final boolean MAINTAIN_ASPECT = true;
 
@@ -107,11 +108,11 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                 new Runnable() {
                     @Override
                     public void run() {
-                        LOGGER.i("Running detection on image " + currTimestamp);
+                        //LOGGER.i("Running detection on image " + currTimestamp);
                         final long startTime = SystemClock.uptimeMillis();
                         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-                        LOGGER.i("Running detection on image (DONE) in " + lastProcessingTimeMs);
+                        Logger.d(TAG, "recognizeImage", "cost time = " + (lastProcessingTimeMs));
 
                         if(isDebug()){
                             //below just for debug
@@ -126,15 +127,18 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                             List<Human> humans = results.get(0).humans;
                             if(humans.size() > 0){
                                 //for openpose no-debug. must set callback
+                                long s = System.currentTimeMillis();
                                 List<Integer> ids = callback.match(humans.get(0).parts);
+                                Logger.d(TAG , "match", "cost time(ms) = " + (System.currentTimeMillis() - s));
                                 if(!Predicates.isEmpty(ids)){
                                     //permit
                                     cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
                                     final Canvas canvas = new Canvas(cropCopyBitmap);
                                     drawImpl(canvas, humans.get(0).parts, ids);
                                     //TODO 放大到识别之前的图像？
-
                                     requestRender();
+                                }else {
+                                    Logger.d(TAG, "match ok");
                                 }
                             }else {
                                 Toaster.show(mActivity,  R.string.lib_openpose_recognize_failed, Gravity.CENTER);
@@ -259,7 +263,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     @Override
     public void setDebug(final boolean debug) {
         super.setDebug(debug);
-        detector.enableStatLogging(debug);
+        if(detector != null){
+            detector.enableStatLogging(debug);
+        }
     }
     protected int getScreenOrientation() {
         switch (mActivity.getWindowManager().getDefaultDisplay().getRotation()) {
