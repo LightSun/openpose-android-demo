@@ -11,22 +11,30 @@ import android.graphics.Typeface;
 import android.os.SystemClock;
 import android.util.Size;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.Surface;
 
 import androidx.annotation.IdRes;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.heaven7.android.lib_openpose.R;
+import com.heaven7.core.util.Logger;
+import com.heaven7.core.util.Toaster;
+import com.heaven7.java.base.util.Predicates;
 import com.ricardotejo.openpose.bean.Coord;
 import com.ricardotejo.openpose.bean.Human;
 import com.ricardotejo.openpose.env.BorderedText;
 import com.ricardotejo.openpose.env.ImageUtils;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
 public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
+    private static final String TAG = "OpenposeCM";
     /*private*/ static final int MP_INPUT_SIZE = 368;
     /*private*/ static final String MP_INPUT_NAME = "image";
     /*private*/ static final String MP_OUTPUT_L1 = "Openpose/MConv_Stage6_L1_5_pointwise/BatchNorm/FusedBatchNorm";
@@ -37,6 +45,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     private static final float TEXT_SIZE_DIP = 10;
     private static final int HUMAN_RADIUS = 3;
+
+    private final Paint mPaint = new Paint();
 
     private Integer sensorOrientation;
 
@@ -56,9 +66,21 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     private Matrix cropToFrameTransform;
 
     private BorderedText borderedText;
+    private DrawCallback drawCallback = new DrawCallback();
+    private Callback callback;
 
     public OpenposeCameraManager(AppCompatActivity ac, @IdRes int mVg_container) {
         super(ac, mVg_container);
+    }
+
+    public void setCallback(Callback callback) {
+        this.callback = callback;
+    }
+    public void setDrawCallback(DrawCallback drawCallback) {
+        if(drawCallback == null){
+            throw new NullPointerException();
+        }
+        this.drawCallback = drawCallback;
     }
 
     @Override
@@ -87,18 +109,37 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                     public void run() {
                         LOGGER.i("Running detection on image " + currTimestamp);
                         final long startTime = SystemClock.uptimeMillis();
-
                         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
-
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-                        lastHumansFound = results.get(0).humans.size();
                         LOGGER.i("Running detection on image (DONE) in " + lastProcessingTimeMs);
 
-                        cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
-                        final Canvas canvas = new Canvas(cropCopyBitmap);
-                        draw_humans(canvas, results.get(0).humans);
+                        if(isDebug()){
+                            //below just for debug
+                            lastHumansFound = results.get(0).humans.size();
 
-                        requestRender();
+                            cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+                            final Canvas canvas = new Canvas(cropCopyBitmap);
+
+                            draw_humans(canvas, results.get(0).humans);
+                            requestRender();
+                        }else {
+                            List<Human> humans = results.get(0).humans;
+                            if(humans.size() > 0){
+                                //for openpose no-debug. must set callback
+                                List<Integer> ids = callback.match(humans.get(0).parts);
+                                if(!Predicates.isEmpty(ids)){
+                                    //permit
+                                    cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+                                    final Canvas canvas = new Canvas(cropCopyBitmap);
+                                    drawImpl(canvas, humans.get(0).parts, ids);
+                                    //TODO 放大到识别之前的图像？
+
+                                    requestRender();
+                                }
+                            }else {
+                                Toaster.show(mActivity,  R.string.lib_openpose_recognize_failed, Gravity.CENTER);
+                            }
+                        }
                         computingDetection = false;
                     }
                 });
@@ -142,120 +183,77 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         cropToFrameTransform = new Matrix();
         frameToCropTransform.invert(cropToFrameTransform);//逆矩阵
 
-        if(isDebug()){
-            addCallback(
-                    new OverlayView.DrawCallback() {
-                        @Override
-                        public void drawCallback(final Canvas canvas) {
-                            if (!isDebug()) {
-                                return;
-                            }
-                            final Bitmap copy = cropCopyBitmap;
-                            if (copy == null) {
-                                return;
-                            }
-
-                            final int backgroundColor = Color.rgb(0, 255, 0);
-                            //canvas.drawColor(backgroundColor);
-                            Paint pp = new Paint();
-                            pp.setColor(backgroundColor);
-                            final float scaleFactor = 2;
-                            canvas.drawRect(new Rect(5, 5,
-                                    15 + copy.getWidth() * (int)scaleFactor,
-                                    15 + copy.getHeight() * (int)scaleFactor), pp);
-
-                            final Matrix matrix = new Matrix();
-
-                            matrix.postScale(scaleFactor, scaleFactor);
-
-                            // RT: Position of the preview canvas
-                            matrix.postTranslate(10, 10);
-                            //matrix.postTranslate(
-                            //        canvas.getWidth() - copy.getWidth() * scaleFactor,
-                            //        canvas.getHeight() - copy.getHeight() * scaleFactor);
-                            canvas.drawBitmap(copy, matrix, null);
-
-                            final Vector<String> lines = new Vector<String>();
-                            if (detector != null) {
-                                final String statString = detector.getStatString();
-                                final String[] statLines = statString.split("\n");
-                                for (final String line : statLines) {
-                                    lines.add(line);
-                                }
-                            }
-                            lines.add("");
-
-                            lines.add("Frame: " + previewWidth + "x" + previewHeight);
-                            lines.add("Crop: " + copy.getWidth() + "x" + copy.getHeight());
-                            lines.add("View: " + canvas.getWidth() + "x" + canvas.getHeight());
-                            lines.add("Rotation: " + sensorOrientation);
-                            lines.add("Inference time: " + lastProcessingTimeMs + "ms");
-                            lines.add("Humans found: " + lastHumansFound);
-
-                            //borderedText.drawLines(canvas, 10, canvas.getHeight() - 10, lines); // bottom
-                            borderedText.drawLinesTop(canvas, copy.getWidth() * scaleFactor + 30, 10, lines); // top-right
-                        }
-                    });
-        }
+        addCallback(new Draw0());
     }
 
     public void draw_humans(Canvas canvas, List<Human> human_list) {
         //def draw_humans(img, human_list):
         // image_h, image_w = img_copied.shape[:2]
+
+        //    for human in human_list:
+        for (Human human : human_list) {
+            drawImpl(canvas, human.parts, Collections.<Integer>emptyList());
+        }
+        //    return img_copied
+    }
+    private void drawImpl(Canvas canvas, Map<Integer, Coord> parts, List<Integer> mismatches){
         int cp = Common.CocoPart.values().length;
         int image_w = canvas.getWidth();
         int image_h = canvas.getHeight();
 
-        Paint paint = new Paint();
-        //    for human in human_list:
-        for (Human human : human_list) {
-            Point[] centers = new Point[cp]; //识别到的人体关键点坐标Point. 数组index代表关键点的id.
-            //part_idxs = human.keys()
-            Set<Integer> part_idxs = human.parts.keySet();
+        Point[] centers = new Point[cp]; //识别到的人体关键点坐标Point. 数组index代表关键点的id.
+        //part_idxs = human.keys()
+        Set<Integer> part_idxs = parts.keySet();
 
-            LOGGER.i("COORD =====================================");
-            //# draw point
-            //for i in range(CocoPart.Background.value):
-            for (Common.CocoPart i : Common.CocoPart.values()) {
-                //if i not in part_idxs:
-                if (!part_idxs.contains(i.index)) {
-                    LOGGER.w("COORD %s, NULL, NULL", i.toString());
-                    continue;
-                }
-                //part_coord = human[i][1]
-                Coord part_coord = human.parts.get(i.index);
-                //center = (int(part_coord[0] * image_w + 0.5), int(part_coord[1] * image_h + 0.5))
-                //映射到canvas的坐标
-                Point center = new Point((int) (part_coord.x * image_w + 0.5f), (int) (part_coord.y * image_h + 0.5f));
-                //centers[i] = center
-                centers[i.index] = center;
-
-                //cv2.circle(img_copied, center, 3, CocoColors[i], thickness=3, lineType=8, shift=0)
-                paint.setColor(Color.rgb(Common.CocoColors[i.index][0], Common.CocoColors[i.index][1], Common.CocoColors[i.index][2]));
-                paint.setStyle(Paint.Style.FILL);
-                canvas.drawCircle(center.x, center.y, HUMAN_RADIUS, paint);
-
-                LOGGER.i("COORD %s, %f, %f", i.toString(), part_coord.x, part_coord.y);
+        LOGGER.i("COORD =====================================");
+        //# draw point
+        //for i in range(CocoPart.Background.value):
+        Coord part_coord;
+        Point center;
+        boolean match;
+        int[] pair;
+        for (Common.CocoPart i : Common.CocoPart.values()) {
+            //if i not in part_idxs:
+            if (!part_idxs.contains(i.index)) {
+                LOGGER.w("COORD %s, NULL, NULL", i.toString());
+                continue;
             }
+            //part_coord = human[i][1]
+            part_coord = parts.get(i.index);
+            //center = (int(part_coord[0] * image_w + 0.5), int(part_coord[1] * image_h + 0.5))
+            //映射到canvas的坐标
+            center = new Point((int) (part_coord.x * image_w + 0.5f), (int) (part_coord.y * image_h + 0.5f));
+            //centers[i] = center
+            centers[i.index] = center;
 
-            //# draw line 连接的关键点.
-            //for pair_order, pair in enumerate(CocoPairsRender):
-            for (int pair_order = 0; pair_order < Common.CocoPairsRender.length; pair_order++) {
-                int[] pair = Common.CocoPairsRender[pair_order];
-                //if pair[0] not in part_idxs or pair[1] not in part_idxs:
-                if (!part_idxs.contains(pair[0]) || !part_idxs.contains(pair[1])) {
-                    continue;
-                }
+            //cv2.circle(img_copied, center, 3, CocoColors[i], thickness=3, lineType=8, shift=0)
+            match = mismatches.isEmpty() || !mismatches.contains(i.index);
+            //mPaint.setColor(Common.CocoColors[i.index]);
+            mPaint.setColor(drawCallback.getPointColor(i.index, match, Common.CocoColors[i.index]));
+            mPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(center.x, center.y, drawCallback.getPointRadius(match), mPaint);
 
-                //img_copied = cv2.line(img_copied, centers[pair[0]], centers[pair[1]], CocoColors[pair_order], 3)
-                paint.setColor(Color.rgb(Common.CocoColors[pair_order][0], Common.CocoColors[pair_order][1], Common.CocoColors[pair_order][2]));
-                paint.setStrokeWidth(HUMAN_RADIUS);
-                paint.setStyle(Paint.Style.STROKE);
-
-                canvas.drawLine(centers[pair[0]].x, centers[pair[0]].y, centers[pair[1]].x, centers[pair[1]].y, paint);
-            }
+            LOGGER.i("COORD %s, %f, %f", i.toString(), part_coord.x, part_coord.y);
         }
-        //    return img_copied
+
+        //# draw line 连接的关键点.
+        //for pair_order, pair in enumerate(CocoPairsRender):
+        for (int pair_order = 0; pair_order < Common.CocoPairsRender.length; pair_order++) {
+            pair = Common.CocoPairsRender[pair_order];
+            //if pair[0] not in part_idxs or pair[1] not in part_idxs:
+            if (!part_idxs.contains(pair[0]) || !part_idxs.contains(pair[1])) {
+                continue;
+            }
+            match = mismatches.isEmpty() || (!mismatches.contains(pair[0]) && !mismatches.contains(pair[1]));
+
+            //img_copied = cv2.line(img_copied, centers[pair[0]], centers[pair[1]], CocoColors[pair_order], 3)
+            //mPaint.setColor(Common.CocoColors[pair_order]);
+            mPaint.setColor(drawCallback.getConcatColor(pair[0], pair[1], match, Common.CocoColors[pair_order]));
+            mPaint.setStrokeWidth(drawCallback.getConcatStrokeWidth(match));
+            mPaint.setStyle(Paint.Style.STROKE);
+
+            canvas.drawLine(centers[pair[0]].x, centers[pair[0]].y, centers[pair[1]].x, centers[pair[1]].y, mPaint);
+        }
     }
 
     @Override
@@ -275,9 +273,82 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                 return 0;
         }
     }
+    public interface Callback{
+        /**
+         * match the movement and return mismatched coords.
+         * @param result the recognize result
+         * @return the mismatch ids
+         */
+        List<Integer> match(Map<Integer, Coord> result);
+    }
 
-    public interface DrawCallback{
-        int getPointColor(int id);
-        int getConcatColor(int id1, int id2);
+    public static class DrawCallback{
+
+        public int getPointColor(int id, boolean match, int defaultColor){
+            return defaultColor;
+        }
+        public int getConcatColor(int id1, int id2, boolean match, int defaultColor){
+            return defaultColor;
+        }
+        public float getPointRadius(boolean match){
+            return HUMAN_RADIUS;
+        }
+        public float getConcatStrokeWidth(boolean match){
+            return HUMAN_RADIUS;
+        }
+    }
+    private class Draw0 implements OverlayView.DrawCallback{
+        final Paint pp = new Paint();
+        final Matrix matrix = new Matrix();
+        final Vector<String> lines = new Vector<String>();
+        @Override
+        public void drawCallback(final Canvas canvas) {
+            final Bitmap copy = cropCopyBitmap;
+            if (copy == null) {
+                return;
+            }
+            matrix.reset();
+            if (!isDebug()) {
+                matrix.postScale(2, 2);
+                canvas.drawBitmap(copy, matrix, null);
+                return;
+            }
+            final int backgroundColor = Color.rgb(0, 255, 0);
+            //canvas.drawColor(backgroundColor);
+            pp.setColor(backgroundColor);
+            final float scaleFactor = 2;
+            canvas.drawRect(new Rect(5, 5,
+                    15 + copy.getWidth() * (int)scaleFactor,
+                    15 + copy.getHeight() * (int)scaleFactor), pp);
+
+            matrix.postScale(scaleFactor, scaleFactor);
+
+            // RT: Position of the preview canvas
+            matrix.postTranslate(10, 10);
+            //matrix.postTranslate(
+            //        canvas.getWidth() - copy.getWidth() * scaleFactor,
+            //        canvas.getHeight() - copy.getHeight() * scaleFactor);
+            canvas.drawBitmap(copy, matrix, null);
+
+            if (detector != null) {
+                final String statString = detector.getStatString();
+                final String[] statLines = statString.split("\n");
+                for (final String line : statLines) {
+                    lines.add(line);
+                }
+            }
+            lines.add("");
+
+            lines.add("Frame: " + previewWidth + "x" + previewHeight);
+            lines.add("Crop: " + copy.getWidth() + "x" + copy.getHeight());
+            lines.add("View: " + canvas.getWidth() + "x" + canvas.getHeight());
+            lines.add("Rotation: " + sensorOrientation);
+            lines.add("Inference time: " + lastProcessingTimeMs + "ms");
+            lines.add("Humans found: " + lastHumansFound);
+            lines.clear();
+
+            //borderedText.drawLines(canvas, 10, canvas.getHeight() - 10, lines); // bottom
+            borderedText.drawLinesTop(canvas, copy.getWidth() * scaleFactor + 30, 10, lines); // top-right
+        }
     }
 }

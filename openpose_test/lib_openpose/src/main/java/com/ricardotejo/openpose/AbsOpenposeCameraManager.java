@@ -3,7 +3,6 @@ package com.ricardotejo.openpose;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -16,6 +15,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
 import android.util.Size;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,6 +25,7 @@ import com.heaven7.android.lib_openpose.R;
 import com.ricardotejo.openpose.env.ImageUtils;
 import com.ricardotejo.openpose.env.Logger;
 
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -57,6 +58,8 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     private boolean mPermissionRequesting;
     private Size mDesiredPreviewSize;
 
+    private WeakReference<Fragment> mWeakFrag;
+
     public AbsOpenposeCameraManager(AppCompatActivity ac, int mVg_container) {
         this.mContainerId = mVg_container;
         this.mActivity = ac;
@@ -76,6 +79,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     protected Size getDesiredPreviewFrameSize(){
         return mDesiredPreviewSize != null ? mDesiredPreviewSize : DESIRED_PREVIEW_SIZE;
     }
+
     @Override
     public void onPreviewFrame(final byte[] bytes, final Camera camera) {
         if (isProcessingFrame) {
@@ -93,7 +97,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
                 onPreviewSizeChosen(new Size(previewSize.width, previewSize.height), 90); // TODO: RT rotation : 90
             }
         } catch (final Exception e) {
-            LOGGER.e(e, "Exception!");
+            e.printStackTrace();
             return;
         }
 
@@ -263,15 +267,21 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     }
 
     public void requestRender() {
-        final OverlayView overlay = (OverlayView) mActivity.findViewById(R.id.debug_overlay);
-        if (overlay != null) {
-            overlay.postInvalidate();
+        Fragment fragment = mWeakFrag.get();
+        View parent = fragment != null ? fragment.getView() : null;
+        if(parent != null){
+            final OverlayView overlay = parent.findViewById(R.id.debug_overlay);
+            if (overlay != null) {
+                overlay.postInvalidate();
+            }
         }
     }
 
     public void addCallback(final OverlayView.DrawCallback callback) {
-        final OverlayView overlay = (OverlayView) mActivity.findViewById(R.id.debug_overlay);
-        if (overlay != null) {
+        Fragment fragment = mWeakFrag.get();
+        View parent = fragment != null ? fragment.getView() : null;
+        if(parent != null) {
+            final OverlayView overlay = parent.findViewById(R.id.debug_overlay);
             overlay.addCallback(callback);
         }
     }
@@ -359,6 +369,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         mPermissionRequesting = false;
         LOGGER.d("start show camera fragment");
         Fragment fragment = setFragment();
+        mWeakFrag = new WeakReference<>(fragment);
         mActivity.getSupportFragmentManager().beginTransaction()
                 .replace(mContainerId, fragment, fragment.getClass().getSimpleName())
                 .commit();

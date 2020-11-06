@@ -2,6 +2,8 @@
 
 package com.ricardotejo.openpose;
 
+import android.graphics.Color;
+
 public final class Common {
 
     public enum CocoPart
@@ -47,9 +49,31 @@ public final class Common {
             {12, 13}, {20, 21}, {14, 15}, {16, 17}, {22, 23}, {24, 25}, {0, 1}, {2, 3}, {4, 5},
             {6, 7}, {8, 9}, {10, 11}, {28, 29}, {30, 31}, {34, 35}, {32, 33}, {36, 37}, {18, 19}, {26, 27}}; // # = 19
 
-    public static final short[][] CocoColors = {
+    public static final int[] CocoColors = {
+            Color.rgb(255, 0, 0),
+            Color.rgb(255, 85, 0),
+            Color.rgb(255, 170, 0),
+            Color.rgb(255, 255, 0),
+            Color.rgb(170, 255, 0),
+            Color.rgb(85, 255, 0),
+            Color.rgb(0, 255, 0),
+
+            Color.rgb(0, 255, 85),
+            Color.rgb(0, 255, 170),
+            Color.rgb(0, 255, 255),
+            Color.rgb(0, 170, 255),
+            Color.rgb(0, 85, 255),
+            Color.rgb(0, 0, 255),
+            Color.rgb(85, 0, 255),
+
+            Color.rgb(170, 0, 255),
+            Color.rgb(255, 0, 255),
+            Color.rgb(255, 0, 170),
+            Color.rgb(255, 0, 85),
+/*
             {255, 0, 0}, {255, 85, 0}, {255, 170, 0}, {255, 255, 0}, {170, 255, 0}, {85, 255, 0}, {0, 255, 0},
             {0, 255, 85}, {0, 255, 170}, {0, 255, 255}, {0, 170, 255}, {0, 85, 255}, {0, 0, 255}, {85, 0, 255},
-            {170, 0, 255}, {255, 0, 255}, {255, 0, 170}, {255, 0, 85}};
+            {170, 0, 255}, {255, 0, 255}, {255, 0, 170}, {255, 0, 85}*/
+    };
 
 }
