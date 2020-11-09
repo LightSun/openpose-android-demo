@@ -16,6 +16,7 @@ limitations under the License.
 package com.ricardotejo.openpose.env;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.os.Environment;
 import java.io.File;
@@ -340,5 +341,21 @@ public class ImageUtils {
     }
 
     return matrix;
+  }
+
+  public static Bitmap alignWidthHeight(Bitmap bitmap, int alignW, int alignH, int dstW, int dstH){
+    int max = Math.max(bitmap.getWidth(), bitmap.getHeight());
+    if(alignW < max || alignH < max){
+      throw new IllegalStateException();
+    }
+    float tx = (alignW - bitmap.getWidth() )*1f / 2;
+    float ty = (alignH - bitmap.getHeight() )*1f / 2;
+    Matrix mat = new Matrix();
+    mat.postTranslate(tx, ty);
+
+    Bitmap result = Bitmap.createBitmap(alignW, alignH, Bitmap.Config.ARGB_8888);
+    Canvas canvas = new Canvas(result);
+    canvas.drawBitmap(bitmap, mat, null);
+    return Bitmap.createScaledBitmap(result, dstW, dstH, true);
   }
 }

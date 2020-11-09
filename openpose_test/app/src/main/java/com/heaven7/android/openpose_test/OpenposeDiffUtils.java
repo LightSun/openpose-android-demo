@@ -1,6 +1,9 @@
 package com.heaven7.android.openpose_test;
 
+import com.ricardotejo.openpose.Common;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -217,20 +220,44 @@ public final class OpenposeDiffUtils {
         }
     }
     //返回不匹配的数组
-    public static List<Integer> match(float[][] pose1, float[][] pose2) {
+    public static List<Integer> match(float[][] mainPose, float[][] pose2, float expect) {
         PoseDiff pd = new PoseDiff();
-        float[] result = pd.diff(pose1, pose2);
+        float[] result = pd.diff(mainPose, pose2);
+        System.out.println("diff result: " + Arrays.toString(result));
         float sum = 0;
-        for (float val: result){
-            sum += val;
+        int count = 0;
+        for (int i = 0 ; i < result.length ; i ++){
+            float val = result[i];
+            //去掉非stand的 diff
+            if(mainPose[i][0] != 0){
+                sum += val;
+                count ++;
+            }
         }
-        float avg = sum / result.length;
-        final float expect = 0.75f;
+        float avg = sum / count;
+        System.out.println(String.format("Diff-match >>> (avg, stand) = (%.3f, %.3f)", avg, expect));
         if(avg < expect){
+            boolean waist_miss = false;
             List<Integer> mismatch = new ArrayList<>();
             for (int i = 0; i < result.length; i++) {
-                if(result[i] < expect){
-                    mismatch.add(i);
+                //主pose 识别到了这个部位
+                if(result[i] < expect && mainPose[i][0] != 0){
+                    if(i == 8){
+                        waist_miss = true;
+                    }else {
+                         mismatch.add(i >= 8 ? i - 1 : i);
+                    }
+                }
+            }
+            //根据未识别到的腰index. 添加左右臀
+            if(waist_miss){
+                int idx = Common.CocoPart.LHip.index;
+                if(mainPose[idx][0] != 0 && !mismatch.contains(idx)){
+                    mismatch.add(idx);
+                }
+                idx = Common.CocoPart.RHip.index;
+                if(mainPose[idx][0] != 0 && !mismatch.contains(idx)){
+                    mismatch.add(idx);
                 }
             }
             return mismatch;

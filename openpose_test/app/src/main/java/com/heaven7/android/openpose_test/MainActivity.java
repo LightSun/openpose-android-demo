@@ -13,6 +13,7 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
+import com.heaven7.java.base.util.Logger;
 import com.heaven7.java.base.util.Predicates;
 import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.java.visitor.MapFireVisitor;
@@ -35,6 +36,8 @@ import butterknife.ButterKnife;
 public class MainActivity extends AppCompatActivity implements OpenposeDetector.Callback,
         OpenposeDetector.DebugCallback, OpenposeCameraManager.Callback {
 
+    private static final String TAG = "MainActivity";
+    private static final float EXPECT = 0.75f;
     @BindView(R.id.container)
     ViewGroup mVg_camera;
     @BindView(R.id.vg_imgs)
@@ -50,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     private OpenposeDetector mDetector;
     private OpenposeCameraManager mOCM;
     private float[][] mPose1;
+    private boolean mTestDiff;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
 
         mOCM = new OpenposeCameraManager(this, R.id.container);
         mOCM.setCallback(this);
-       // mOCM.setDebug(false);
+        mOCM.setDebug(false);
         mOCM.setDrawCallback(new DrawCallback0(this));
         mVg_camera.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
@@ -106,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     }
 
     public void onClickDirectImage(View view) {
+        mTestDiff = false;
         if(mDetector == null){
             mDetector = new OpenposeDetector(this);
         }
@@ -113,6 +118,18 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mVg_camera.setVisibility(View.GONE);
 
         String path = "cover2.jpg";
+        Glide.with(getApplicationContext()).load("file:///android_asset/" + path).into(iv1);
+        mDetector.recognizeImageFromAssets(Schedulers.io(), path, this);
+    }
+    public void onClickDirectImage2(View view) {
+        mTestDiff = true;
+        if(mDetector == null){
+            mDetector = new OpenposeDetector(this);
+        }
+        mVg_imgs.setVisibility(View.VISIBLE);
+        mVg_camera.setVisibility(View.GONE);
+
+        String path = "test.jpg";
         Glide.with(getApplicationContext()).load("file:///android_asset/" + path).into(iv1);
         mDetector.recognizeImageFromAssets(Schedulers.io(), path, this);
     }
@@ -124,12 +141,20 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
          * 2, diff 平均 大于 阈值 则指出哪些动作不正确.
          */
         if(!Predicates.isEmpty(list)){
+            System.out.println("get stand info ok.");
             for (Human human : list){
                 for (Map.Entry<Integer, Coord> en :human.parts.entrySet()){
                     System.out.println(en.getKey() + ":  " + en.getValue());
                 }
             }
-            mPose1 = toPose(list.get(0).parts);
+            //mOCM.setMainCoordMap(list.get(0).parts);
+            float[][] mPose1 = toPose(list.get(0).parts);
+            if(mTestDiff){
+                List<Integer> ids = OpenposeDiffUtils.match(this.mPose1, mPose1, EXPECT);
+                System.out.println("onRecognized mismatch ids = " + ids);
+            }else {
+                this.mPose1 = mPose1;
+            }
         }else {
             System.err.println("no human");
         }
@@ -149,21 +174,49 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             System.err.println("no pose1");
             return Collections.emptyList();
         }
-        return OpenposeDiffUtils.match(mPose1, toPose(map));
+        return OpenposeDiffUtils.match(mPose1, toPose(map), EXPECT);
     }
     private float[][] toPose(Map<Integer, Coord> map){
         final float[][] pose2 = new float[Common.CocoPairs.length][];
+        //为了算法，插入腰.  腰 = (左臀 + 右臀)/2. index = 8
+        Coord left = map.get(Common.CocoPart.LHip.index);
+        Coord right = map.get(Common.CocoPart.RHip.index);
+        float[] waist = new float[3];
+        if(left != null){
+            float x, y , score;
+            if(right != null){
+                x = (left.x + right.x) / 2;
+                y = (left.y + right.y) / 2;
+                score = (left.score + right.score) / 2;
+            }else {
+                x = left.x;
+                y = left.y;
+                score = left.score;
+            }
+            waist[0] = x;
+            waist[1] = y;
+            waist[2] = score;
+        }else if(right != null){
+            waist[0] = right.x;
+            waist[1] = right.y;
+            waist[2] = right.score;
+        }else {
+            Arrays.fill(waist, 0);
+        }
         VisitServices.from(map).fire(new MapFireVisitor<Integer, Coord>() {
             @Override
             public Boolean visit(KeyValuePair<Integer, Coord> pair, Object param) {
                 Coord c = pair.getValue();
-                float[] arr = pose2[pair.getKey()] = new float[3];
+                //for insert waist to index 8.
+                int index = pair.getKey() >= 8 ? pair.getKey() + 1 : pair.getKey();
+                float[] arr = pose2[index] = new float[3];
                 arr[0] = c.x;
                 arr[1] = c.y;
                 arr[2] = c.score;
                 return null;
             }
         });
+        pose2[8] = waist;
         populate0(pose2);
         return pose2;
     }

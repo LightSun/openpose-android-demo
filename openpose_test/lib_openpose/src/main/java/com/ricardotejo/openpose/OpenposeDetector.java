@@ -75,6 +75,7 @@ public final class OpenposeDetector {
         }
     }
     public int recognizeImage(Scheduler scheduler, String filePath,  Object key, final Callback cb) {
+        //首次缩放之后先补齐. 然后再缩放和裁剪
         ImageParser parser = new ImageParser(MP_INPUT_SIZE * RATIO, MP_INPUT_SIZE * RATIO,
                 Bitmap.Config.ARGB_8888, true);
         Bitmap bitmap = parser.parseToBitmap(filePath);
@@ -85,13 +86,16 @@ public final class OpenposeDetector {
         if(cb instanceof DebugCallback){
             ((DebugCallback) cb).debugParserImage(bitmap);
         }
-        int cropSize = MP_INPUT_SIZE;
+        //对齐宽高. 保证人一定能被完整的保存下来
+        int wh = Math.max(bitmap.getWidth(), bitmap.getHeight());
+        Bitmap croppedBitmap = ImageUtils.alignWidthHeight(bitmap, wh, wh, MP_INPUT_SIZE, MP_INPUT_SIZE);
 
+        /*int cropSize = MP_INPUT_SIZE;
         Matrix mat = ImageUtils.getTransformationMatrix(bitmap.getWidth(), bitmap.getHeight(),
                 cropSize, cropSize, 0, true);
         Bitmap croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(croppedBitmap);
-        canvas.drawBitmap(bitmap, mat, new Paint());
+        canvas.drawBitmap(bitmap, mat, new Paint());*/
         return recognizeImage(scheduler, croppedBitmap, key, cb);
     }
 

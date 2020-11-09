@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.Vector;
 
 public class OpenposeCameraManager extends AbsOpenposeCameraManager{
@@ -70,6 +71,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     private DrawCallback drawCallback = new DrawCallback();
     private Callback callback;
 
+    private Map<Integer, Coord> mMainCoordMap;
+
     public OpenposeCameraManager(AppCompatActivity ac, @IdRes int mVg_container) {
         super(ac, mVg_container);
     }
@@ -82,6 +85,10 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
             throw new NullPointerException();
         }
         this.drawCallback = drawCallback;
+    }
+    //set main/stand coord map
+    public void setMainCoordMap(Map<Integer, Coord> result){
+        this.mMainCoordMap = result instanceof TreeMap ? result: new TreeMap<>(result);
     }
 
     @Override
@@ -128,8 +135,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                             if(humans.size() > 0){
                                 //for openpose no-debug. must set callback
                                 long s = System.currentTimeMillis();
-                                List<Integer> ids = callback.match(humans.get(0).parts);
-                                Logger.d(TAG , "match", "cost time(ms) = " + (System.currentTimeMillis() - s));
+                                List<Integer> ids = callback.match(new TreeMap<Integer, Coord>(humans.get(0).parts));
+                                Logger.d(TAG , "match", "mismatch ids = " + ids + ", cost time(ms) = " + (System.currentTimeMillis() - s));
                                 if(!Predicates.isEmpty(ids)){
                                     //permit
                                     cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
