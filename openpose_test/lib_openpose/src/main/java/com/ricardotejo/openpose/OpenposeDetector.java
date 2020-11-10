@@ -9,13 +9,16 @@ import android.graphics.Paint;
 
 import com.heaven7.core.util.ImageParser;
 import com.heaven7.java.base.util.Disposable;
+import com.heaven7.java.base.util.IOUtils;
 import com.heaven7.java.base.util.Scheduler;
 import com.heaven7.java.visitor.MapFireVisitor;
 import com.heaven7.java.visitor.collection.KeyValuePair;
 import com.heaven7.java.visitor.collection.VisitServices;
 import com.heaven7.java.visitor.util.SparseArray;
 import com.ricardotejo.openpose.bean.Human;
+import com.ricardotejo.openpose.bean.ImageHandleInfo;
 import com.ricardotejo.openpose.env.ImageUtils;
+import com.ricardotejo.openpose.env.SimpleResizeCallback;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,58 +51,79 @@ public final class OpenposeDetector {
         );
     }
     public int recognizeImageFromAssets(Scheduler scheduler, String assetPath, final Callback cb) {
+        int expectSize = MP_INPUT_SIZE * RATIO;
+
         ImageParser parser = new ImageParser(MP_INPUT_SIZE * RATIO, MP_INPUT_SIZE * RATIO,
-                Bitmap.Config.ARGB_8888, true);
+                Bitmap.Config.ARGB_8888, false);
+        parser.setCallback(new SimpleResizeCallback());
+        float[] outInfo = new float[2];
         Bitmap bitmap = parser.decodeToBitmap(new AssetPathDecoder(),
-                new ImageParser.DecodeParam(assetPath));
-        return recognizeImage0(scheduler, bitmap, assetPath, cb);
+                new ImageParser.DecodeParam(assetPath), outInfo);
+        ImageHandleInfo info = new ImageHandleInfo();
+        info.scale1 = outInfo[0];
+        info.key = assetPath;
+        return recognizeImage0(scheduler, bitmap, info, cb);
     }
     public void recognizeImageFromAssets(Scheduler scheduler, final List<String> assetPaths,
                                          final Callback cb, final Runnable end) {
         ImageParser parser = new ImageParser(MP_INPUT_SIZE * RATIO, MP_INPUT_SIZE * RATIO,
-                Bitmap.Config.ARGB_8888, true);
+                Bitmap.Config.ARGB_8888, false);
+        parser.setCallback(new SimpleResizeCallback());
         final ComposeCallback ccb = new ComposeCallback(cb, new Callback() {
             final AtomicInteger count = new AtomicInteger(assetPaths.size());
             @Override
-            public void onRecognized(Bitmap bitmap, Object key, List<Human> list) {
+            public void onRecognized(Bitmap bitmap, ImageHandleInfo key, List<Human> list) {
                 if(count.decrementAndGet() == 0 && end != null){
                     end.run();
                 }
             }
         });
         AssetPathDecoder pathDecoder = new AssetPathDecoder();
+        float[] outInfo = new float[2];
         for (String assetPath : assetPaths){
             Bitmap bitmap = parser.decodeToBitmap(pathDecoder,
-                    new ImageParser.DecodeParam(assetPath));
-            recognizeImage0(scheduler, bitmap, assetPath, ccb);
+                    new ImageParser.DecodeParam(assetPath), outInfo);
+            ImageHandleInfo info = new ImageHandleInfo();
+            info.scale1 = outInfo[0];
+            info.key = assetPath;
+            recognizeImage0(scheduler, bitmap, info, ccb);
         }
     }
-    public int recognizeImage(Scheduler scheduler, String filePath,  Object key, final Callback cb) {
+    public int recognizeImage(Scheduler scheduler, String filePath, Object key, final Callback cb) {
         //首次缩放之后先补齐. 然后再缩放和裁剪
         ImageParser parser = new ImageParser(MP_INPUT_SIZE * RATIO, MP_INPUT_SIZE * RATIO,
-                Bitmap.Config.ARGB_8888, true);
-        Bitmap bitmap = parser.parseToBitmap(filePath);
-        return recognizeImage0(scheduler, bitmap, key, cb);
+                Bitmap.Config.ARGB_8888, false);
+        parser.setCallback(new SimpleResizeCallback());
+        float[] outInfo = new float[2];
+        Bitmap bitmap = parser.parseToBitmap(filePath, outInfo);
+        ImageHandleInfo info = new ImageHandleInfo();
+        info.scale1 = outInfo[0];
+        info.key = key;
+        return recognizeImage0(scheduler, bitmap, info, cb);
     }
 
-    public int recognizeImage0(Scheduler scheduler, Bitmap bitmap, Object key,final Callback cb) {
+    public int recognizeImage0(Scheduler scheduler, Bitmap bitmap, ImageHandleInfo info, final Callback cb) {
+        if(cb instanceof DebugCallback){
+            Bitmap rawImage = Bitmap.createScaledBitmap(bitmap, (int) (info.scale1 * bitmap.getWidth()),
+                    (int) (info.scale1 * bitmap.getHeight()), false);
+            ((DebugCallback) cb).debugRawImage(rawImage);
+        }
         if(cb instanceof DebugCallback){
             ((DebugCallback) cb).debugParserImage(bitmap);
         }
         //对齐宽高. 保证人一定能被完整的保存下来
         int wh = Math.max(bitmap.getWidth(), bitmap.getHeight());
         Bitmap croppedBitmap = ImageUtils.alignWidthHeight(bitmap, wh, wh, MP_INPUT_SIZE, MP_INPUT_SIZE);
-
-        /*int cropSize = MP_INPUT_SIZE;
-        Matrix mat = ImageUtils.getTransformationMatrix(bitmap.getWidth(), bitmap.getHeight(),
-                cropSize, cropSize, 0, true);
-        Bitmap croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(croppedBitmap);
-        canvas.drawBitmap(bitmap, mat, new Paint());*/
-        return recognizeImage(scheduler, croppedBitmap, key, cb);
+        info.scale2 = wh * 1f / MP_INPUT_SIZE;
+        //为了渲染出最后不正确的动作。需要将最后识别出的动作对齐到原图。
+        info.compensateWidth = wh - bitmap.getWidth();
+        info.compensateHeight = wh - bitmap.getHeight();
+        info.finalWidth = MP_INPUT_SIZE;
+        info.finalHeight = MP_INPUT_SIZE;
+        return recognizeImage(scheduler, croppedBitmap, info, cb);
     }
 
-    public int recognizeImage(Scheduler scheduler, final Bitmap bitmap, final Object key, final Callback cb) {
+    public int recognizeImage(Scheduler scheduler, final Bitmap bitmap, final ImageHandleInfo info, final Callback cb) {
         if(cb instanceof DebugCallback){
             ((DebugCallback) cb).debugCropImage(bitmap);
         }
@@ -112,7 +136,7 @@ public final class OpenposeDetector {
                     humans = reg.humans;
                 }
             }
-            cb.onRecognized(bitmap, key, humans);
+            cb.onRecognized(bitmap, info, humans);
             return 0;
         }else {
             final int id = mId.incrementAndGet();
@@ -127,7 +151,7 @@ public final class OpenposeDetector {
                             humans = reg.humans;
                         }
                     }
-                    cb.onRecognized(bitmap, key, humans);
+                    cb.onRecognized(bitmap, info, humans);
                     synchronized (mTaskMap){
                         mTaskMap.remove(id);
                     }
@@ -162,11 +186,14 @@ public final class OpenposeDetector {
     private class AssetPathDecoder implements ImageParser.IDecoder{
         @Override
         public Bitmap decode(ImageParser.DecodeParam decodeParam, BitmapFactory.Options options) {
+            InputStream in = null;
             try {
-                InputStream in = mActivity.getAssets().open(decodeParam.pathName);
+                in = mActivity.getAssets().open(decodeParam.pathName);
                 return BitmapFactory.decodeStream(in, null, options);
             } catch (IOException e) {
                 throw new RuntimeException(e);
+            }finally {
+                IOUtils.closeQuietly(in);
             }
         }
         @Override
@@ -182,7 +209,7 @@ public final class OpenposeDetector {
             this.c2 = c2;
         }
         @Override
-        public void onRecognized(Bitmap bitmap, Object key, List<Human> list) {
+        public void onRecognized(Bitmap bitmap, ImageHandleInfo key, List<Human> list) {
             if(c1 != null){
                 c1.onRecognized(bitmap, key, list);
             }
@@ -200,6 +227,15 @@ public final class OpenposeDetector {
             }
         }
         @Override
+        public void debugRawImage(Bitmap bitmap) {
+            if(c1 instanceof DebugCallback){
+                ((DebugCallback)c1).debugRawImage(bitmap);
+            }
+            if(c2 instanceof DebugCallback){
+                ((DebugCallback)c2).debugRawImage(bitmap);
+            }
+        }
+        @Override
         public void debugCropImage(Bitmap bitmap) {
             if(c1 instanceof DebugCallback){
                 ((DebugCallback)c1).debugCropImage(bitmap);
@@ -210,9 +246,10 @@ public final class OpenposeDetector {
         }
     }
     public interface Callback{
-        void onRecognized(Bitmap bitmap, Object key, List<Human> list);
+        void onRecognized(Bitmap bitmap, ImageHandleInfo key, List<Human> list);
     }
     public interface DebugCallback{
+        void debugRawImage(Bitmap bitmap);
         void debugParserImage(Bitmap bitmap);
         void debugCropImage(Bitmap bitmap);
     }

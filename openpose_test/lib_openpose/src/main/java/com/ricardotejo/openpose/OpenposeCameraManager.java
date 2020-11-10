@@ -23,6 +23,7 @@ import com.heaven7.core.util.Toaster;
 import com.heaven7.java.base.util.Predicates;
 import com.ricardotejo.openpose.bean.Coord;
 import com.ricardotejo.openpose.bean.Human;
+import com.ricardotejo.openpose.bean.ImageHandleInfo;
 import com.ricardotejo.openpose.env.BorderedText;
 import com.ricardotejo.openpose.env.ImageUtils;
 
@@ -141,7 +142,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                                     //permit
                                     cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
                                     final Canvas canvas = new Canvas(cropCopyBitmap);
-                                    drawImpl(canvas, humans.get(0).parts, ids);
+                                    drawMismatch(canvas, humans.get(0).parts, ids);
                                     //TODO 放大到识别之前的图像？
                                     requestRender();
                                 }else {
@@ -203,11 +204,60 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
         //    for human in human_list:
         for (Human human : human_list) {
-            drawImpl(canvas, human.parts, Collections.<Integer>emptyList());
+            drawMismatch(canvas, human.parts, Collections.<Integer>emptyList());
         }
         //    return img_copied
     }
-    private void drawImpl(Canvas canvas, Map<Integer, Coord> parts, List<Integer> mismatches){
+    public void drawMismatch(Map<Integer, Coord> parts, ImageHandleInfo info, List<Integer> mismatches){
+        int cp = Common.CocoPart.values().length;
+        Point[] centers = new Point[cp];
+
+        Coord part_coord;
+        float x, y;
+        boolean match;
+        int[] pair;
+        Point p;
+
+        drawCallback.beginDraw();
+        for (Map.Entry<Integer, Coord> en : parts.entrySet()){
+            int idx = en.getKey();
+            part_coord = en.getValue();
+            float w0 = info.finalWidth * info.scale2;
+            float h0 = info.finalHeight * info.scale2;
+            x = part_coord.x * w0;
+            y = part_coord.y * h0;
+            x = (x - info.compensateWidth / 2) * info.scale1;
+            y = (y - info.compensateHeight / 2) * info.scale1;
+            p = centers[idx] = new Point((int)(x + 0.5f), (int)(y + 0.5f));
+
+            match = mismatches.isEmpty() || !mismatches.contains(idx);
+            //mPaint.setColor(Common.CocoColors[i.index]);
+            mPaint.setColor(drawCallback.getPointColor(idx, match, Common.CocoColors[idx]));
+            mPaint.setStyle(Paint.Style.FILL);
+            drawCallback.drawPoint(p.x, p.y, drawCallback.getPointRadius(match), mPaint);
+           // canvas.drawCircle(center.x, center.y, drawCallback.getPointRadius(match), mPaint);
+        }
+        Set<Integer> part_idxs = parts.keySet();
+        for (int pair_order = 0; pair_order < Common.CocoPairsRender.length; pair_order++) {
+            pair = Common.CocoPairsRender[pair_order];
+            //if pair[0] not in part_idxs or pair[1] not in part_idxs:
+            if (!part_idxs.contains(pair[0]) || !part_idxs.contains(pair[1])) {
+                continue;
+            }
+            match = mismatches.isEmpty() || (!mismatches.contains(pair[0]) && !mismatches.contains(pair[1]));
+
+            //img_copied = cv2.line(img_copied, centers[pair[0]], centers[pair[1]], CocoColors[pair_order], 3)
+            //mPaint.setColor(Common.CocoColors[pair_order]);
+            mPaint.setColor(drawCallback.getConcatColor(pair[0], pair[1], match, Common.CocoColors[pair_order]));
+            mPaint.setStrokeWidth(drawCallback.getConcatStrokeWidth(match));
+            mPaint.setStyle(Paint.Style.STROKE);
+            drawCallback.drawConcatLine(centers[pair[0]].x, centers[pair[0]].y, centers[pair[1]].x, centers[pair[1]].y, mPaint);
+           // canvas.drawLine(centers[pair[0]].x, centers[pair[0]].y, centers[pair[1]].x, centers[pair[1]].y, mPaint);
+        }
+
+        drawCallback.endDraw();
+    }
+    public void drawMismatch(Canvas canvas, Map<Integer, Coord> parts, List<Integer> mismatches){
         int cp = Common.CocoPart.values().length;
         int image_w = canvas.getWidth();
         int image_h = canvas.getHeight();
@@ -308,6 +358,19 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
         public float getConcatStrokeWidth(boolean match){
             return HUMAN_RADIUS;
+        }
+        //used for draw to raw image
+        public void drawPoint(float x, float y, float radius, Paint mPaint) {
+
+        }
+        public void beginDraw() {
+
+        }
+        public void endDraw() {
+
+        }
+        public void drawConcatLine(int x, int y, int x1, int y1, Paint mPaint) {
+
         }
     }
     private class Draw0 implements OverlayView.DrawCallback{

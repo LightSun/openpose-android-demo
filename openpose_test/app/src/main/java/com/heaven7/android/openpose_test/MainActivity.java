@@ -1,11 +1,15 @@
 package com.heaven7.android.openpose_test;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,7 +17,8 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
-import com.heaven7.java.base.util.Logger;
+import com.bumptech.glide.request.target.BitmapImageViewTarget;
+import com.bumptech.glide.request.target.ImageViewTarget;
 import com.heaven7.java.base.util.Predicates;
 import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.java.visitor.MapFireVisitor;
@@ -24,6 +29,7 @@ import com.ricardotejo.openpose.OpenposeCameraManager;
 import com.ricardotejo.openpose.OpenposeDetector;
 import com.ricardotejo.openpose.bean.Coord;
 import com.ricardotejo.openpose.bean.Human;
+import com.ricardotejo.openpose.bean.ImageHandleInfo;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         OpenposeDetector.DebugCallback, OpenposeCameraManager.Callback {
 
     private static final String TAG = "MainActivity";
-    private static final float EXPECT = 0.75f;
+    private static final float EXPECT = 0.01f;
     @BindView(R.id.container)
     ViewGroup mVg_camera;
     @BindView(R.id.vg_imgs)
@@ -45,15 +51,22 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
 
     @BindView(R.id.iv1)
     ImageView iv1;
+    @BindView(R.id.iv1_mask)
+    ImageView iv1_mask;
     @BindView(R.id.iv2)
     ImageView iv2;
     @BindView(R.id.iv3)
     ImageView iv3;
+    @BindView(R.id.iv4)
+    ImageView iv4;
 
     private OpenposeDetector mDetector;
     private OpenposeCameraManager mOCM;
     private float[][] mPose1;
     private boolean mTestDiff;
+    private Bitmap mCopyCropBitmap;
+
+    private Bitmap mRawBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,7 +147,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mDetector.recognizeImageFromAssets(Schedulers.io(), path, this);
     }
     @Override
-    public void onRecognized(Bitmap bitmap, Object key, List<Human> list) {
+    public void onRecognized(Bitmap bitmap, ImageHandleInfo key, final List<Human> list) {
         /*
          * 动作是否正确。（比如健身）
          * 1, 计算diff.
@@ -150,14 +163,35 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             //mOCM.setMainCoordMap(list.get(0).parts);
             float[][] mPose1 = toPose(list.get(0).parts);
             if(mTestDiff){
-                List<Integer> ids = OpenposeDiffUtils.match(this.mPose1, mPose1, EXPECT);
+                final List<Integer> ids = OpenposeDiffUtils.match(this.mPose1, mPose1, EXPECT);
                 System.out.println("onRecognized mismatch ids = " + ids);
+                //cropped image. just for debug
+                Canvas canvas = new Canvas(mCopyCropBitmap);
+                mOCM.drawMismatch(canvas, list.get(0).parts, ids);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        iv4.setImageBitmap(mCopyCropBitmap);
+                    }
+                });
+                mOCM.drawMismatch(list.get(0).parts, key, ids);
             }else {
                 this.mPose1 = mPose1;
             }
         }else {
             System.err.println("no human");
         }
+    }
+
+    @Override
+    public void debugRawImage(Bitmap bitmap) {
+        mRawBitmap = bitmap;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                iv1_mask.setImageBitmap(mRawBitmap);
+            }
+        });
     }
     @Override
     public void debugParserImage(Bitmap bitmap) {
@@ -166,6 +200,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     @Override
     public void debugCropImage(Bitmap bitmap) {
         iv3.setImageBitmap(bitmap);
+        mCopyCropBitmap = Bitmap.createBitmap(bitmap);
     }
 
     @Override
@@ -231,9 +266,11 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             }
         }
     }
-    private static class DrawCallback0 extends OpenposeCameraManager.DrawCallback {
+    private class DrawCallback0 extends OpenposeCameraManager.DrawCallback {
 
         private final Context ctx;
+        private Canvas canvas;
+        private Bitmap mMaskImage;
 
         public DrawCallback0(Context ctx) {
             this.ctx = ctx.getApplicationContext();
@@ -256,6 +293,28 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                 return super.getConcatColor(id1, id2, match, defaultColor);
             }*/
             return match ? Color.GREEN : Color.BLACK;
+        }
+        @Override
+        public void drawPoint(float x, float y, float radius, Paint mPaint) {
+            canvas.drawCircle(x, y, radius, mPaint);
+        }
+        @Override
+        public void drawConcatLine(int x, int y, int x1, int y1, Paint mPaint) {
+            canvas.drawLine(x, y, x1, y1, mPaint);
+        }
+        @Override
+        public void beginDraw() {
+            mMaskImage = Bitmap.createBitmap(mRawBitmap);
+            canvas = new Canvas(mMaskImage);
+        }
+        @Override
+        public void endDraw() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    iv1_mask.setImageBitmap(mMaskImage);
+                }
+            });
         }
     }
 }
