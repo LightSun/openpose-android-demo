@@ -289,9 +289,6 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         }
         @Override
         public int getConcatColor(int id1, int id2, boolean match, int defaultColor) {
-            /*if(match){
-                return super.getConcatColor(id1, id2, match, defaultColor);
-            }*/
             return match ? Color.GREEN : Color.BLACK;
         }
         @Override

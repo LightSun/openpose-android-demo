@@ -17,6 +17,7 @@
 package com.ricardotejo.openpose;
 
 import android.content.Context;
+import android.content.Intent;
 import android.util.AttributeSet;
 import android.view.TextureView;
 
@@ -26,6 +27,7 @@ import android.view.TextureView;
 public class AutoFitTextureView extends TextureView {
   private int ratioWidth = 0;
   private int ratioHeight = 0;
+  public static final String ACTION = "com.heaven7.fit_texture";
 
   public AutoFitTextureView(final Context context) {
     this(context, null);
@@ -62,13 +64,21 @@ public class AutoFitTextureView extends TextureView {
     final int width = MeasureSpec.getSize(widthMeasureSpec);
     final int height = MeasureSpec.getSize(heightMeasureSpec);
     if (0 == ratioWidth || 0 == ratioHeight) {
-      setMeasuredDimension(width, height);
+      setMeasuredDimension0(width, height);
     } else {
       if (width < height * ratioWidth / ratioHeight) {
-        setMeasuredDimension(width, width * ratioHeight / ratioWidth);
+        setMeasuredDimension0(width, width * ratioHeight / ratioWidth);
       } else {
-        setMeasuredDimension(height * ratioWidth / ratioHeight, height);
+        setMeasuredDimension0(height * ratioWidth / ratioHeight, height);
       }
     }
+  }
+
+  public void setMeasuredDimension0(int w, int h){
+    setMeasuredDimension(w, h);
+    Intent intent = new Intent(ACTION);
+    intent.putExtra("w", w);
+    intent.putExtra("h", h);
+    getContext().sendBroadcast(intent);
   }
 }

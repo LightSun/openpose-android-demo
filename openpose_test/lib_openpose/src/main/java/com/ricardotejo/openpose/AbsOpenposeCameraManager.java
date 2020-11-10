@@ -365,7 +365,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         }
         return null;
     }
-    private void showInternal(){
+    protected void showInternal(){
         mPermissionRequesting = false;
         LOGGER.d("start show camera fragment");
         Fragment fragment = setFragment();
@@ -377,6 +377,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
 
     private Fragment setFragment() {
         String cameraId = chooseCamera();
+      //  String cameraId = null;
 
         Fragment fragment;
         if (useCamera2API) {
@@ -400,5 +401,4 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         }
         return fragment;
     }
-
 }

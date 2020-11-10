@@ -342,7 +342,10 @@ public class ImageUtils {
 
     return matrix;
   }
-
+  public static Bitmap alignWidthHeight(Bitmap bitmap, int dstW, int dstH){
+    int max = Math.max(bitmap.getWidth(), bitmap.getHeight());
+    return alignWidthHeight(bitmap, max, max, dstW, dstH);
+  }
   public static Bitmap alignWidthHeight(Bitmap bitmap, int alignW, int alignH, int dstW, int dstH){
     int max = Math.max(bitmap.getWidth(), bitmap.getHeight());
     if(alignW < max || alignH < max){

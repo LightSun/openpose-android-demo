@@ -1,5 +1,9 @@
 package com.ricardotejo.openpose;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -19,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.heaven7.android.lib_openpose.R;
 import com.heaven7.core.util.Logger;
+import com.heaven7.core.util.MainWorker;
 import com.heaven7.core.util.Toaster;
 import com.heaven7.java.base.util.Predicates;
 import com.ricardotejo.openpose.bean.Coord;
@@ -44,35 +49,30 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     //static final String MP_MODEL_FILE = "file:///android_asset/frozen_person_model.pb";
     static final String MP_MODEL_FILE = "file:///android_asset/graph_opt.pb"; //识别率比 frozen_person_model好
 
-    private static final boolean MAINTAIN_ASPECT = true;
-
     private static final float TEXT_SIZE_DIP = 10;
     private static final int HUMAN_RADIUS = 3;
 
     private final Paint mPaint = new Paint();
+    private final Rect mRect = new Rect();;
 
     private Integer sensorOrientation;
 
     private Classifier detector;
 
     private long lastProcessingTimeMs;
-    private int lastHumansFound;
     private Bitmap rgbFrameBitmap = null;
+    private Bitmap rgbFrameCopyBitmap;
     private Bitmap croppedBitmap = null;
-    private Bitmap cropCopyBitmap = null;
 
     private boolean computingDetection = false;
 
     private long timestamp = 0;
 
-    private Matrix frameToCropTransform;
-    private Matrix cropToFrameTransform;
-
-    private BorderedText borderedText;
     private DrawCallback drawCallback = new DrawCallback();
     private Callback callback;
 
-    private Map<Integer, Coord> mMainCoordMap;
+    private final ImageHandleInfo mHandleInfo = new ImageHandleInfo();
+    private Receiver0 mReceiver;
 
     public OpenposeCameraManager(AppCompatActivity ac, @IdRes int mVg_container) {
         super(ac, mVg_container);
@@ -87,9 +87,12 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
         this.drawCallback = drawCallback;
     }
-    //set main/stand coord map
-    public void setMainCoordMap(Map<Integer, Coord> result){
-        this.mMainCoordMap = result instanceof TreeMap ? result: new TreeMap<>(result);
+
+    public void resetOverlap(){
+        if(rgbFrameCopyBitmap != null){
+            rgbFrameCopyBitmap = null;
+            requestRender();
+        }
     }
 
     @Override
@@ -103,14 +106,32 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
             return;
         }
         computingDetection = true;
+        long start = System.currentTimeMillis();
         LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
 
         readyForNextImage();
 
-        final Canvas canvas = new Canvas(croppedBitmap);
-        canvas.drawBitmap(rgbFrameBitmap, frameToCropTransform, null); // paint the cropped image
+        mHandleInfo.reset();
+        //scale 1
+        int max = MP_INPUT_SIZE * 2;
+        float sx = max * 1f / previewWidth;
+        float sy = max * 1f / previewHeight;
+        float s = Math.min(sx, sy);
+        Bitmap bitmap = Bitmap.createScaledBitmap(rgbFrameBitmap, (int) (previewWidth * s), (int) (previewHeight * s), false);
+        mHandleInfo.scale1 = 1 / s;
+        //align
+        croppedBitmap = ImageUtils.alignWidthHeight(bitmap, MP_INPUT_SIZE, MP_INPUT_SIZE);
+        //对齐宽高. 保证人一定能被完整的保存下来
+        int wh = Math.max(bitmap.getWidth(), bitmap.getHeight());
+        mHandleInfo.scale2 = wh * 1f / MP_INPUT_SIZE;
+        //为了渲染出最后不正确的动作。需要将最后识别出的动作对齐到原图。
+        mHandleInfo.compensateWidth = wh - bitmap.getWidth();
+        mHandleInfo.compensateHeight = wh - bitmap.getHeight();
+        mHandleInfo.finalWidth = MP_INPUT_SIZE;
+        mHandleInfo.finalHeight = MP_INPUT_SIZE;
+        LOGGER.d(TAG, "prepare recognize:  cost time(ms) = " + (System.currentTimeMillis() - start));
 
         runInBackground(
                 new Runnable() {
@@ -120,37 +141,27 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                         final long startTime = SystemClock.uptimeMillis();
                         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
                         lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-                        Logger.d(TAG, "recognizeImage", "cost time = " + (lastProcessingTimeMs));
-
-                        if(isDebug()){
-                            //below just for debug
-                            lastHumansFound = results.get(0).humans.size();
-
-                            cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
-                            final Canvas canvas = new Canvas(cropCopyBitmap);
-
-                            draw_humans(canvas, results.get(0).humans);
-                            requestRender();
-                        }else {
-                            List<Human> humans = results.get(0).humans;
-                            if(humans.size() > 0){
-                                //for openpose no-debug. must set callback
-                                long s = System.currentTimeMillis();
-                                List<Integer> ids = callback.match(new TreeMap<Integer, Coord>(humans.get(0).parts));
-                                Logger.d(TAG , "match", "mismatch ids = " + ids + ", cost time(ms) = " + (System.currentTimeMillis() - s));
-                                if(!Predicates.isEmpty(ids)){
-                                    //permit
-                                    cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
-                                    final Canvas canvas = new Canvas(cropCopyBitmap);
-                                    drawMismatch(canvas, humans.get(0).parts, ids);
-                                    //TODO 放大到识别之前的图像？
-                                    requestRender();
-                                }else {
-                                    Logger.d(TAG, "match ok");
-                                }
+                        LOGGER.d(TAG, "recognizeImage", "cost time = " + (lastProcessingTimeMs));
+                        //never for debug now
+                        List<Human> humans = results.get(0).humans;
+                        if(humans.size() > 0){
+                            //for openpose no-debug. must set callback
+                            long s = System.currentTimeMillis();
+                            List<Integer> ids = callback.match(new TreeMap<Integer, Coord>(humans.get(0).parts));
+                            LOGGER.d(TAG , "match", "mismatch ids = " + ids + ", cost time(ms) = " + (System.currentTimeMillis() - s));
+                            if(!Predicates.isEmpty(ids)){
+                                //permit
+                                rgbFrameCopyBitmap = Bitmap.createBitmap(rgbFrameBitmap.getWidth(),
+                                        rgbFrameBitmap.getHeight(), rgbFrameBitmap.getConfig());
+                                Canvas canvas = new Canvas(rgbFrameCopyBitmap);
+                                drawMismatch(canvas, humans.get(0).parts, mHandleInfo, ids);
+                                requestRender();
                             }else {
-                                Toaster.show(mActivity,  R.string.lib_openpose_recognize_failed, Gravity.CENTER);
+                                Logger.d(TAG, "match ok");
                             }
+                        }else {
+                            LOGGER.d(TAG, "动作识别失败.");
+                           // Toaster.show(mActivity,  R.string.lib_openpose_recognize_failed, Gravity.CENTER);
                         }
                         computingDetection = false;
                     }
@@ -159,12 +170,6 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     @Override
     protected void onPreviewSizeChosen(Size size, int rotation) {
-        final float textSizePx =
-                TypedValue.applyDimension(
-                        TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, mActivity.getResources().getDisplayMetrics());
-        borderedText = new BorderedText(textSizePx);
-        borderedText.setTypeface(Typeface.MONOSPACE);
-
         int cropSize = MP_INPUT_SIZE;
 
         // Configure the detector
@@ -178,6 +183,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
+      //  mRect.set(0, 0, previewWidth, previewHeight);
 
         sensorOrientation = rotation - getScreenOrientation();
         LOGGER.i("Camera orientation relative to screen canvas: %d", sensorOrientation);
@@ -185,15 +191,6 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         LOGGER.i("Initializing at size %dx%d", previewWidth, previewHeight);
         rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Bitmap.Config.ARGB_8888);
         croppedBitmap = Bitmap.createBitmap(cropSize, cropSize, Bitmap.Config.ARGB_8888);
-
-        frameToCropTransform =
-                ImageUtils.getTransformationMatrix(
-                        previewWidth, previewHeight,
-                        cropSize, cropSize,
-                        sensorOrientation, MAINTAIN_ASPECT);
-        //mapVectors等函数是映射成需要的坐标
-        cropToFrameTransform = new Matrix();
-        frameToCropTransform.invert(cropToFrameTransform);//逆矩阵
 
         addCallback(new Draw0());
     }
@@ -209,6 +206,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         //    return img_copied
     }
     public void drawMismatch(Map<Integer, Coord> parts, ImageHandleInfo info, List<Integer> mismatches){
+        drawMismatch(null, parts, info, mismatches);
+    }
+    public void drawMismatch(Canvas canvas,Map<Integer, Coord> parts, ImageHandleInfo info, List<Integer> mismatches){
         int cp = Common.CocoPart.values().length;
         Point[] centers = new Point[cp];
 
@@ -218,24 +218,27 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         int[] pair;
         Point p;
 
-        drawCallback.beginDraw();
+        if(canvas == null){
+            drawCallback.beginDraw();
+        }
         for (Map.Entry<Integer, Coord> en : parts.entrySet()){
             int idx = en.getKey();
             part_coord = en.getValue();
             float w0 = info.finalWidth * info.scale2;
             float h0 = info.finalHeight * info.scale2;
-            x = part_coord.x * w0;
-            y = part_coord.y * h0;
-            x = (x - info.compensateWidth / 2) * info.scale1;
-            y = (y - info.compensateHeight / 2) * info.scale1;
+            x = (part_coord.x * w0 - info.compensateWidth / 2) * info.scale1;
+            y = (part_coord.y * h0 - info.compensateHeight / 2) * info.scale1;
             p = centers[idx] = new Point((int)(x + 0.5f), (int)(y + 0.5f));
 
             match = mismatches.isEmpty() || !mismatches.contains(idx);
             //mPaint.setColor(Common.CocoColors[i.index]);
             mPaint.setColor(drawCallback.getPointColor(idx, match, Common.CocoColors[idx]));
             mPaint.setStyle(Paint.Style.FILL);
-            drawCallback.drawPoint(p.x, p.y, drawCallback.getPointRadius(match), mPaint);
-           // canvas.drawCircle(center.x, center.y, drawCallback.getPointRadius(match), mPaint);
+            if(canvas != null){
+                canvas.drawCircle(p.x, p.y, drawCallback.getPointRadius(match), mPaint);
+            }else {
+                drawCallback.drawPoint(p.x, p.y, drawCallback.getPointRadius(match), mPaint);
+            }
         }
         Set<Integer> part_idxs = parts.keySet();
         for (int pair_order = 0; pair_order < Common.CocoPairsRender.length; pair_order++) {
@@ -251,11 +254,15 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
             mPaint.setColor(drawCallback.getConcatColor(pair[0], pair[1], match, Common.CocoColors[pair_order]));
             mPaint.setStrokeWidth(drawCallback.getConcatStrokeWidth(match));
             mPaint.setStyle(Paint.Style.STROKE);
-            drawCallback.drawConcatLine(centers[pair[0]].x, centers[pair[0]].y, centers[pair[1]].x, centers[pair[1]].y, mPaint);
-           // canvas.drawLine(centers[pair[0]].x, centers[pair[0]].y, centers[pair[1]].x, centers[pair[1]].y, mPaint);
+            if(canvas != null){
+                canvas.drawLine(centers[pair[0]].x, centers[pair[0]].y, centers[pair[1]].x, centers[pair[1]].y, mPaint);
+            }else {
+                drawCallback.drawConcatLine(centers[pair[0]].x, centers[pair[0]].y, centers[pair[1]].x, centers[pair[1]].y, mPaint);
+            }
         }
-
-        drawCallback.endDraw();
+        if(canvas == null){
+            drawCallback.endDraw();
+        }
     }
     public void drawMismatch(Canvas canvas, Map<Integer, Coord> parts, List<Integer> mismatches){
         int cp = Common.CocoPart.values().length;
@@ -336,6 +343,48 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                 return 0;
         }
     }
+
+    @Override
+    public synchronized void onPause() {
+        unregisterReceiver();
+        super.onPause();
+    }
+
+    @Override
+    public synchronized void onResume() {
+        super.onResume();
+        registerReceiver();
+    }
+
+    @Override
+    protected void showInternal() {
+        registerReceiver();
+        super.showInternal();
+    }
+    private void registerReceiver(){
+        if(mReceiver == null){
+            mReceiver = new Receiver0();
+            mActivity.registerReceiver(mReceiver, new IntentFilter(AutoFitTextureView.ACTION));
+        }
+    }
+    private void unregisterReceiver(){
+        if(mReceiver != null){
+            mActivity.unregisterReceiver(mReceiver);
+            mReceiver = null;
+        }
+    }
+
+    private class Receiver0 extends BroadcastReceiver{
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(AutoFitTextureView.ACTION.equals(intent.getAction())){
+                int w = intent.getIntExtra("w", 0);
+                int h = intent.getIntExtra("h", 0);
+                mRect.set(0, 0, w, h);
+            }
+        }
+    }
+
     public interface Callback{
         /**
          * match the movement and return mismatched coords.
@@ -374,57 +423,12 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
     }
     private class Draw0 implements OverlayView.DrawCallback{
-        final Paint pp = new Paint();
-        final Matrix matrix = new Matrix();
-        final Vector<String> lines = new Vector<String>();
         @Override
         public void drawCallback(final Canvas canvas) {
-            final Bitmap copy = cropCopyBitmap;
-            if (copy == null) {
-                return;
+            if(rgbFrameCopyBitmap != null){
+                canvas.drawBitmap(rgbFrameCopyBitmap, null, mRect,  null);
+                //canvas.drawBitmap(rgbFrameCopyBitmap, 0, 0,  null);
             }
-            matrix.reset();
-            if (!isDebug()) {
-                matrix.postScale(2, 2);
-                canvas.drawBitmap(copy, matrix, null);
-                return;
-            }
-            final int backgroundColor = Color.rgb(0, 255, 0);
-            //canvas.drawColor(backgroundColor);
-            pp.setColor(backgroundColor);
-            final float scaleFactor = 2;
-            canvas.drawRect(new Rect(5, 5,
-                    15 + copy.getWidth() * (int)scaleFactor,
-                    15 + copy.getHeight() * (int)scaleFactor), pp);
-
-            matrix.postScale(scaleFactor, scaleFactor);
-
-            // RT: Position of the preview canvas
-            matrix.postTranslate(10, 10);
-            //matrix.postTranslate(
-            //        canvas.getWidth() - copy.getWidth() * scaleFactor,
-            //        canvas.getHeight() - copy.getHeight() * scaleFactor);
-            canvas.drawBitmap(copy, matrix, null);
-
-            if (detector != null) {
-                final String statString = detector.getStatString();
-                final String[] statLines = statString.split("\n");
-                for (final String line : statLines) {
-                    lines.add(line);
-                }
-            }
-            lines.add("");
-
-            lines.add("Frame: " + previewWidth + "x" + previewHeight);
-            lines.add("Crop: " + copy.getWidth() + "x" + copy.getHeight());
-            lines.add("View: " + canvas.getWidth() + "x" + canvas.getHeight());
-            lines.add("Rotation: " + sensorOrientation);
-            lines.add("Inference time: " + lastProcessingTimeMs + "ms");
-            lines.add("Humans found: " + lastHumansFound);
-            lines.clear();
-
-            //borderedText.drawLines(canvas, 10, canvas.getHeight() - 10, lines); // bottom
-            borderedText.drawLinesTop(canvas, copy.getWidth() * scaleFactor + 30, 10, lines); // top-right
         }
     }
 }
