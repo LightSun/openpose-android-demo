@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +24,7 @@ import com.heaven7.java.visitor.collection.VisitServices;
 import com.heaven7.openpose.openpose.Common;
 import com.heaven7.openpose.openpose.OpenposeCameraManager;
 import com.heaven7.openpose.openpose.OpenposeDetector;
+import com.heaven7.openpose.openpose.OverlayView;
 import com.heaven7.openpose.openpose.bean.Coord;
 import com.heaven7.openpose.openpose.bean.Human;
 import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
@@ -56,6 +58,9 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     @BindView(R.id.iv4)
     ImageView iv4;
 
+    @BindView(R.id.overlap_debug)
+    OverlayView overlap_debug;
+
     private OpenposeDetector mDetector;
     private OpenposeCameraManager mOCM;
     private float[][] mPose1;
@@ -64,14 +69,19 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
 
     private Bitmap mRawBitmap;
 
+    private DebugCallback0 debugCB = new DebugCallback0();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        overlap_debug.addCallback(debugCB);
+
         mOCM = new OpenposeCameraManager(this, R.id.container);
         mOCM.setCallback(this);
+        mOCM.setDebugCallback(debugCB);
         mOCM.setDebug(false);
         mOCM.setDrawCallback(new DrawCallback0(this));
         mVg_camera.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
@@ -273,11 +283,11 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         }
         @Override
         public int getPointColor(int id, boolean match, int defaultColor) {
-            return match ? Color.BLUE : Color.RED;
+            return match ? Color.GREEN : Color.RED;
         }
         @Override
         public float getPointRadius(boolean match) {
-            return 8;
+            return 15;
         }
         @Override
         public float getConcatStrokeWidth(boolean match) {
@@ -285,7 +295,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         }
         @Override
         public int getConcatColor(int id1, int id2, boolean match, int defaultColor) {
-            return match ? Color.GREEN : Color.BLACK;
+            return Color.YELLOW;
         }
         @Override
         public void drawPoint(float x, float y, float radius, Paint mPaint) {
@@ -308,6 +318,35 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                     iv1_mask.setImageBitmap(mMaskImage);
                 }
             });
+        }
+    }
+    private class DebugCallback0 implements OpenposeCameraManager.DebugCallback, OverlayView.DrawCallback{
+
+        final Rect rect = new Rect();
+        final Rect vRect = new Rect();
+        volatile Bitmap raw;
+        volatile Bitmap mark;
+
+        @Override
+        public void debugRawImage(Bitmap bitmap) {
+            raw = Bitmap.createBitmap(bitmap);
+        }
+        @Override
+        public void debugMarkImage(Bitmap bitmap) {
+            mark = Bitmap.createBitmap(bitmap);
+            overlap_debug.postInvalidate();
+            vRect.set(0, 0, overlap_debug.getWidth(), overlap_debug.getHeight());
+        }
+        @Override
+        public void drawCallback(Canvas canvas) {
+            if(raw != null){
+                rect.set(0, 0, raw.getWidth(), raw.getHeight());
+                canvas.drawBitmap(raw, rect, vRect, null);
+            }
+            if(mark != null){
+                rect.set(0, 0, mark.getWidth(), mark.getHeight());
+                canvas.drawBitmap(mark, rect, vRect, null);
+            }
         }
     }
 }

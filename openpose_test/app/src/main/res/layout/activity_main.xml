@@ -40,11 +40,24 @@
         android:layout_height="match_parent">
 
         <LinearLayout
-            android:id="@+id/container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             >
+            <LinearLayout
+                android:id="@+id/container"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                >
+            </LinearLayout>
+            <com.heaven7.openpose.openpose.OverlayView
+                android:id="@+id/overlap_debug"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                />
         </LinearLayout>
 
         <androidx.core.widget.NestedScrollView
@@ -83,7 +96,6 @@
                     />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
-
     </FrameLayout>
 
 </LinearLayout>

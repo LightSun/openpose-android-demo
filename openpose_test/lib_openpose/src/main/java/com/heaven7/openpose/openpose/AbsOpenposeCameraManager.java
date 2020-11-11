@@ -395,6 +395,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
                             new CameraConnectionFragment.ConnectionCallback() {
                                 @Override
                                 public void onPreviewSizeChosen(final Size size, final int rotation) {
+                                    System.out.println("preview size:  w =" + size.getWidth() + " ,h = " + size.getHeight());
                                     previewHeight = size.getHeight();
                                     previewWidth = size.getWidth();
                                     AbsOpenposeCameraManager.this.onPreviewSizeChosen(size, rotation);

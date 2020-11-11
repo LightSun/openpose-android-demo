@@ -62,6 +62,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     //debug info
     private final OpenposeDebug mOpenposeDebug = new OpenposeDebug();
+    private DebugCallback debugCallback;
 
     public OpenposeCameraManager(AppCompatActivity ac, @IdRes int mVg_container) {
         super(ac, mVg_container);
@@ -83,6 +84,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
             requestRender();
         }
     }
+    public void setDebugCallback(DebugCallback debugCallback) {
+        this.debugCallback = debugCallback;
+    }
 
     public void enableCount(boolean enable){
         mOpenposeDebug.setEnable(enable);
@@ -103,6 +107,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         mOpenposeDebug.start(OpenposeDebug.TYPE_PREPARE);
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
+        if(debugCallback != null){
+            debugCallback.debugRawImage(rgbFrameBitmap);
+        }
 
         readyForNextImage();
 
@@ -149,6 +156,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                             Canvas canvas = new Canvas(rgbFrameCopyBitmap);
                             drawMismatch(canvas, humans.get(0).parts, mHandleInfo, ids);
                             mOpenposeDebug.end();
+                            if(debugCallback != null){
+                                debugCallback.debugMarkImage(rgbFrameCopyBitmap);
+                            }
                             requestRender();
                         }else {
                             LOGGER.d(TAG, "动作识别失败.");
@@ -375,6 +385,10 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                 mRect.set(0, 0, w, h);
             }
         }
+    }
+    public interface DebugCallback{
+        void debugRawImage(Bitmap bitmap);
+        void debugMarkImage(Bitmap bitmap);
     }
 
     public interface Callback{

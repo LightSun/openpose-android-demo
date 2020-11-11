@@ -40,6 +40,7 @@ public final class Common {
             this.index = index;
         }
     }
+    public static final boolean OPT_PREVIEW_SIZE = false;
 
     public static final int[][] CocoPairs = {
             {1, 2}, {1, 5}, {2, 3}, {3, 4}, {5, 6}, {6, 7}, {1, 8}, {8, 9}, {9, 10}, {1, 11},
