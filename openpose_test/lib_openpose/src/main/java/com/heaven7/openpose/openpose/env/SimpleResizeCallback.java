@@ -1,4 +1,4 @@
-package com.ricardotejo.openpose.env;
+package com.heaven7.openpose.openpose.env;
 
 import com.heaven7.core.util.ImageParser;
 

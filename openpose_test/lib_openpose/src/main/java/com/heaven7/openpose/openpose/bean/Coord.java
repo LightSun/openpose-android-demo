@@ -1,4 +1,4 @@
-package com.ricardotejo.openpose.bean;
+package com.heaven7.openpose.openpose.bean;
 
 public class Coord {
     public float x;

@@ -1,4 +1,4 @@
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 public interface ICameraDelegate {
 

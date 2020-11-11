@@ -1,10 +1,9 @@
 package com.heaven7.android.openpose_test;
 
-import com.ricardotejo.openpose.Common;
+import com.heaven7.openpose.openpose.Common;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

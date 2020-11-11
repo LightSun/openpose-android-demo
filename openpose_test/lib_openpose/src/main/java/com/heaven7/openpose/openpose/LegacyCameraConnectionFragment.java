@@ -1,4 +1,4 @@
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 /*
  * Copyright 2017 The TensorFlow Authors. All Rights Reserved.
@@ -36,8 +36,8 @@ import androidx.fragment.app.Fragment;
 import java.util.List;
 
 import com.heaven7.android.lib_openpose.R;
-import com.ricardotejo.openpose.env.ImageUtils;
-import com.ricardotejo.openpose.env.Logger;
+import com.heaven7.openpose.openpose.env.ImageUtils;
+import com.heaven7.openpose.openpose.env.Logger;
 
 @SuppressLint("ValidFragment")
 public class LegacyCameraConnectionFragment extends Fragment implements ICameraDelegate{

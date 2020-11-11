@@ -1,6 +1,6 @@
 // Code migrated from https://github.com/ildoonet/tf-pose-estimation
 
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 import android.graphics.Color;
 

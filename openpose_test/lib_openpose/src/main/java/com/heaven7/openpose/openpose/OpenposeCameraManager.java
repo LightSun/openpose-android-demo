@@ -1,4 +1,4 @@
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -6,38 +6,28 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.Typeface;
 import android.os.SystemClock;
 import android.util.Size;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.Surface;
 
 import androidx.annotation.IdRes;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.heaven7.android.lib_openpose.R;
 import com.heaven7.core.util.Logger;
-import com.heaven7.core.util.MainWorker;
-import com.heaven7.core.util.Toaster;
 import com.heaven7.java.base.util.Predicates;
-import com.ricardotejo.openpose.bean.Coord;
-import com.ricardotejo.openpose.bean.Human;
-import com.ricardotejo.openpose.bean.ImageHandleInfo;
-import com.ricardotejo.openpose.env.BorderedText;
-import com.ricardotejo.openpose.env.ImageUtils;
+import com.heaven7.openpose.openpose.bean.Coord;
+import com.heaven7.openpose.openpose.bean.Human;
+import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
+import com.heaven7.openpose.openpose.env.ImageUtils;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.Vector;
 
 public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
@@ -73,6 +63,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     private final ImageHandleInfo mHandleInfo = new ImageHandleInfo();
     private Receiver0 mReceiver;
+    private boolean mEnableCount;
 
     public OpenposeCameraManager(AppCompatActivity ac, @IdRes int mVg_container) {
         super(ac, mVg_container);
@@ -95,6 +86,10 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
     }
 
+    public void enableCount(boolean enable){
+        mEnableCount = enable;
+    }
+
     @Override
     protected void processImage() {
         ++timestamp;
@@ -107,7 +102,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
         computingDetection = true;
         long start = System.currentTimeMillis();
-        LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
+        if(mEnableCount){
+            LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
+        }
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
 
@@ -131,7 +128,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         mHandleInfo.compensateHeight = wh - bitmap.getHeight();
         mHandleInfo.finalWidth = MP_INPUT_SIZE;
         mHandleInfo.finalHeight = MP_INPUT_SIZE;
-        LOGGER.d(TAG, "prepare recognize:  cost time(ms) = " + (System.currentTimeMillis() - start));
+        if(mEnableCount){
+            LOGGER.d(TAG, "prepare recognize:  cost time(ms) = " + (System.currentTimeMillis() - start));
+        }
 
         runInBackground(
                 new Runnable() {
@@ -140,15 +139,19 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                         //LOGGER.i("Running detection on image " + currTimestamp);
                         final long startTime = SystemClock.uptimeMillis();
                         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
-                        lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-                        LOGGER.d(TAG, "recognizeImage", "cost time = " + (lastProcessingTimeMs));
+                        if(mEnableCount){
+                            lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+                            LOGGER.d(TAG, "recognizeImage", "cost time = " + (lastProcessingTimeMs));
+                        }
                         //never for debug now
                         List<Human> humans = results.get(0).humans;
                         if(humans.size() > 0){
                             //for openpose no-debug. must set callback
                             long s = System.currentTimeMillis();
                             List<Integer> ids = callback.match(new TreeMap<Integer, Coord>(humans.get(0).parts));
-                            LOGGER.d(TAG , "match", "mismatch ids = " + ids + ", cost time(ms) = " + (System.currentTimeMillis() - s));
+                            if(mEnableCount){
+                                LOGGER.d(TAG , "match", "mismatch ids = " + ids + ", cost time(ms) = " + (System.currentTimeMillis() - s));
+                            }
                             if(!Predicates.isEmpty(ids)){
                                 //permit
                                 rgbFrameCopyBitmap = Bitmap.createBitmap(rgbFrameBitmap.getWidth(),

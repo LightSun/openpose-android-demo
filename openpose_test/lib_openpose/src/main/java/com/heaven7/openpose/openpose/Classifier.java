@@ -1,11 +1,11 @@
 // Code migrated from https://github.com/ildoonet/tf-pose-estimation
 
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 
-import com.ricardotejo.openpose.bean.Human;
+import com.heaven7.openpose.openpose.bean.Human;
 
 import java.util.List;
 

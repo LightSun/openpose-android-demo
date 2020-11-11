@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -63,8 +63,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.heaven7.android.lib_openpose.R;
-import com.ricardotejo.openpose.env.Logger;
-//import com.ricardotejo.openpose.R; // Explicit import needed for internal Google builds.
+import com.heaven7.openpose.openpose.env.Logger;
+//import com.heaven7.openpose.openpose.R; // Explicit import needed for internal Google builds.
 
 @SuppressLint("ValidFragment")
 public class CameraConnectionFragment extends Fragment implements ICameraDelegate{

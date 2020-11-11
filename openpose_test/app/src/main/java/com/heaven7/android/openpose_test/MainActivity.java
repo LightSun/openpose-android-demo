@@ -1,7 +1,6 @@
 package com.heaven7.android.openpose_test;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
@@ -9,7 +8,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,19 +15,17 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.target.BitmapImageViewTarget;
-import com.bumptech.glide.request.target.ImageViewTarget;
 import com.heaven7.java.base.util.Predicates;
 import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.java.visitor.MapFireVisitor;
 import com.heaven7.java.visitor.collection.KeyValuePair;
 import com.heaven7.java.visitor.collection.VisitServices;
-import com.ricardotejo.openpose.Common;
-import com.ricardotejo.openpose.OpenposeCameraManager;
-import com.ricardotejo.openpose.OpenposeDetector;
-import com.ricardotejo.openpose.bean.Coord;
-import com.ricardotejo.openpose.bean.Human;
-import com.ricardotejo.openpose.bean.ImageHandleInfo;
+import com.heaven7.openpose.openpose.Common;
+import com.heaven7.openpose.openpose.OpenposeCameraManager;
+import com.heaven7.openpose.openpose.OpenposeDetector;
+import com.heaven7.openpose.openpose.bean.Coord;
+import com.heaven7.openpose.openpose.bean.Human;
+import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
 
 import java.util.Arrays;
 import java.util.Collections;

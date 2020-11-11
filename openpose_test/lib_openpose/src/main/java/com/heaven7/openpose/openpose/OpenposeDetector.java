@@ -1,11 +1,8 @@
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
-import android.graphics.Paint;
 
 import com.heaven7.core.util.ImageParser;
 import com.heaven7.java.base.util.Disposable;
@@ -15,21 +12,21 @@ import com.heaven7.java.visitor.MapFireVisitor;
 import com.heaven7.java.visitor.collection.KeyValuePair;
 import com.heaven7.java.visitor.collection.VisitServices;
 import com.heaven7.java.visitor.util.SparseArray;
-import com.ricardotejo.openpose.bean.Human;
-import com.ricardotejo.openpose.bean.ImageHandleInfo;
-import com.ricardotejo.openpose.env.ImageUtils;
-import com.ricardotejo.openpose.env.SimpleResizeCallback;
+import com.heaven7.openpose.openpose.bean.Human;
+import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
+import com.heaven7.openpose.openpose.env.ImageUtils;
+import com.heaven7.openpose.openpose.env.SimpleResizeCallback;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.ricardotejo.openpose.OpenposeCameraManager.MP_INPUT_NAME;
-import static com.ricardotejo.openpose.OpenposeCameraManager.MP_INPUT_SIZE;
-import static com.ricardotejo.openpose.OpenposeCameraManager.MP_MODEL_FILE;
-import static com.ricardotejo.openpose.OpenposeCameraManager.MP_OUTPUT_L1;
-import static com.ricardotejo.openpose.OpenposeCameraManager.MP_OUTPUT_L2;
+import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_INPUT_NAME;
+import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_INPUT_SIZE;
+import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_MODEL_FILE;
+import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_OUTPUT_L1;
+import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_OUTPUT_L2;
 
 public final class OpenposeDetector {
 

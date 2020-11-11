@@ -1,4 +1,4 @@
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 import android.Manifest;
 import android.content.Context;
@@ -22,8 +22,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 
 import com.heaven7.android.lib_openpose.R;
-import com.ricardotejo.openpose.env.ImageUtils;
-import com.ricardotejo.openpose.env.Logger;
+import com.heaven7.openpose.openpose.env.ImageUtils;
+import com.heaven7.openpose.openpose.env.Logger;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;

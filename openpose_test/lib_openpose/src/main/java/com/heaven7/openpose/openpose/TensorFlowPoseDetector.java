@@ -1,5 +1,5 @@
 // Partial code migrated from https://github.com/ildoonet/tf-pose-estimation
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
@@ -8,8 +8,8 @@ import android.graphics.RectF;
 import android.os.Trace;
 import android.util.Log;
 
-import com.ricardotejo.openpose.bean.Coord;
-import com.ricardotejo.openpose.bean.Human;
+import com.heaven7.openpose.openpose.bean.Coord;
+import com.heaven7.openpose.openpose.bean.Human;
 
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ricardotejo.openpose;
+package com.heaven7.openpose.openpose;
 
 import android.content.Context;
 import android.content.Intent;

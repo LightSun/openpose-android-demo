@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-package com.ricardotejo.openpose.env;
+package com.heaven7.openpose.openpose.env;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
