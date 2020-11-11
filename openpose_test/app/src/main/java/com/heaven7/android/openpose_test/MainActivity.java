@@ -277,11 +277,11 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         }
         @Override
         public float getPointRadius(boolean match) {
-            return super.getPointRadius(match);
+            return 8;
         }
         @Override
         public float getConcatStrokeWidth(boolean match) {
-            return super.getConcatStrokeWidth(match);
+            return 6;
         }
         @Override
         public int getConcatColor(int id1, int id2, boolean match, int defaultColor) {

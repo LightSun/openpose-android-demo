@@ -9,15 +9,12 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.os.SystemClock;
 import android.util.Size;
 import android.view.Surface;
 
 import androidx.annotation.IdRes;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.heaven7.core.util.Logger;
-import com.heaven7.java.base.util.Predicates;
 import com.heaven7.openpose.openpose.bean.Coord;
 import com.heaven7.openpose.openpose.bean.Human;
 import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
@@ -63,7 +60,10 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     private final ImageHandleInfo mHandleInfo = new ImageHandleInfo();
     private Receiver0 mReceiver;
+
+    //debug info
     private boolean mEnableCount;
+    private final OpenposeDebug mOpenposeDebug = new OpenposeDebug();
 
     public OpenposeCameraManager(AppCompatActivity ac, @IdRes int mVg_container) {
         super(ac, mVg_container);
@@ -87,7 +87,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     }
 
     public void enableCount(boolean enable){
-        mEnableCount = enable;
+        mOpenposeDebug.setEnable(enable);
     }
 
     @Override
@@ -101,10 +101,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
             return;
         }
         computingDetection = true;
-        long start = System.currentTimeMillis();
-        if(mEnableCount){
-            LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
-        }
+        LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
+        mOpenposeDebug.start(OpenposeDebug.TYPE_PREPARE);
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
 
@@ -128,44 +126,37 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         mHandleInfo.compensateHeight = wh - bitmap.getHeight();
         mHandleInfo.finalWidth = MP_INPUT_SIZE;
         mHandleInfo.finalHeight = MP_INPUT_SIZE;
-        if(mEnableCount){
-            LOGGER.d(TAG, "prepare recognize:  cost time(ms) = " + (System.currentTimeMillis() - start));
-        }
+        mOpenposeDebug.end();
 
         runInBackground(
                 new Runnable() {
                     @Override
                     public void run() {
                         //LOGGER.i("Running detection on image " + currTimestamp);
-                        final long startTime = SystemClock.uptimeMillis();
+                        mOpenposeDebug.start(OpenposeDebug.TYPE_RECOGNIZE);
                         final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
-                        if(mEnableCount){
-                            lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-                            LOGGER.d(TAG, "recognizeImage", "cost time = " + (lastProcessingTimeMs));
-                        }
+                        mOpenposeDebug.end();
                         //never for debug now
                         List<Human> humans = results.get(0).humans;
                         if(humans.size() > 0){
                             //for openpose no-debug. must set callback
-                            long s = System.currentTimeMillis();
+                            mOpenposeDebug.start(OpenposeDebug.TYPE_ALGORITHM);
                             List<Integer> ids = callback.match(new TreeMap<Integer, Coord>(humans.get(0).parts));
-                            if(mEnableCount){
-                                LOGGER.d(TAG , "match", "mismatch ids = " + ids + ", cost time(ms) = " + (System.currentTimeMillis() - s));
-                            }
-                            if(!Predicates.isEmpty(ids)){
-                                //permit
-                                rgbFrameCopyBitmap = Bitmap.createBitmap(rgbFrameBitmap.getWidth(),
-                                        rgbFrameBitmap.getHeight(), rgbFrameBitmap.getConfig());
-                                Canvas canvas = new Canvas(rgbFrameCopyBitmap);
-                                drawMismatch(canvas, humans.get(0).parts, mHandleInfo, ids);
-                                requestRender();
-                            }else {
-                                Logger.d(TAG, "match ok");
-                            }
+                            mOpenposeDebug.end();
+                            System.out.println("mismatch ids = " + ids);
+                            //draw
+                            mOpenposeDebug.start(OpenposeDebug.TYPE_DRAW);
+                            rgbFrameCopyBitmap = Bitmap.createBitmap(rgbFrameBitmap.getWidth(),
+                                    rgbFrameBitmap.getHeight(), rgbFrameBitmap.getConfig());
+                            Canvas canvas = new Canvas(rgbFrameCopyBitmap);
+                            drawMismatch(canvas, humans.get(0).parts, mHandleInfo, ids);
+                            mOpenposeDebug.end();
+                            requestRender();
                         }else {
                             LOGGER.d(TAG, "动作识别失败.");
                            // Toaster.show(mActivity,  R.string.lib_openpose_recognize_failed, Gravity.CENTER);
                         }
+                        mOpenposeDebug.printCostInfo();
                         computingDetection = false;
                     }
                 });
