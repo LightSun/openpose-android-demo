@@ -51,7 +51,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     private Bitmap rgbFrameCopyBitmap;
     private Bitmap croppedBitmap = null;
 
-    private boolean computingDetection = false;
+    private volatile boolean computingDetection = false;
 
     private long timestamp = 0;
 
