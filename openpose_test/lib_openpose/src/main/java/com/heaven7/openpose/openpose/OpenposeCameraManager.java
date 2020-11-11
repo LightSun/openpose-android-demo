@@ -46,7 +46,6 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     private Classifier detector;
 
-    private long lastProcessingTimeMs;
     private Bitmap rgbFrameBitmap = null;
     private Bitmap rgbFrameCopyBitmap;
     private Bitmap croppedBitmap = null;
@@ -62,7 +61,6 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     private Receiver0 mReceiver;
 
     //debug info
-    private boolean mEnableCount;
     private final OpenposeDebug mOpenposeDebug = new OpenposeDebug();
 
     public OpenposeCameraManager(AppCompatActivity ac, @IdRes int mVg_container) {
@@ -417,9 +415,20 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
     }
     private class Draw0 implements OverlayView.DrawCallback{
+        int[] wh = new int[2];
+        boolean offset = false;
         @Override
         public void drawCallback(final Canvas canvas) {
+            if(wh[0] == 0){
+                getOverlapViewWH(wh);
+            }
             if(rgbFrameCopyBitmap != null){
+                if(!offset && mRect.width() > 0){
+                    offset = true;
+                    //for ALIGN_BOTTOM we need offset height
+                    int hOffset = wh[1] - mRect.height();
+                    mRect.offset(0, hOffset);
+                }
                 canvas.drawBitmap(rgbFrameCopyBitmap, null, mRect,  null);
                 //canvas.drawBitmap(rgbFrameCopyBitmap, 0, 0,  null);
             }

@@ -276,6 +276,15 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
             }
         }
     }
+    public void getOverlapViewWH(int[] out){
+        Fragment fragment = mWeakFrag.get();
+        View parent = fragment != null ? fragment.getView() : null;
+        if(parent != null){
+            final OverlayView overlay = parent.findViewById(R.id.debug_overlay);
+            out[0] = overlay.getWidth();
+            out[1] = overlay.getHeight();
+        }
+    }
 
     public void addCallback(final OverlayView.DrawCallback callback) {
         Fragment fragment = mWeakFrag.get();
