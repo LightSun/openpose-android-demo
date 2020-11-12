@@ -5,7 +5,21 @@ package com.heaven7.openpose.openpose;
 import android.graphics.Color;
 
 public final class Common {
-
+    // JOINT = ['nose',
+    //          'neck',
+    //          'right shoulder',
+    //          'right elbow',
+    //          'right wrist',
+    //          'left shoulder',
+    //          'left elbow',
+    //          'left wrist',
+    //          'waist',
+    //          'right hip',
+    //          'right knee',
+    //          'right ankle',
+    //          'left hip',
+    //          'left knee',
+    //          'left ankle']
     public enum CocoPart
 
     {

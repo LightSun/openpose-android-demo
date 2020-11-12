@@ -146,6 +146,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                         if(humans.size() > 0){
                             //for openpose no-debug. must set callback
                             mOpenposeDebug.start(OpenposeDebug.TYPE_ALGORITHM);
+                            System.out.println("humans = " + humans);
                             List<Integer> ids = callback.match(new TreeMap<Integer, Coord>(humans.get(0).parts));
                             mOpenposeDebug.end();
                             System.out.println("mismatch ids = " + ids);

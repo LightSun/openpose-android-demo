@@ -6,4 +6,9 @@ import java.util.Map;
 public class Human {
     //key是关键点的id, value是坐标
     public Map<Integer, Coord> parts = new HashMap<>();
+
+    @Override
+    public String toString() {
+        return parts.toString();
+    }
 }

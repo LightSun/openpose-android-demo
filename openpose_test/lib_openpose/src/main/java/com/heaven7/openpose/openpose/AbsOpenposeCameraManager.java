@@ -211,6 +211,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
             handlerThread.start();
             handler = new Handler(handlerThread.getLooper());
         }
+        resume();
     }
 
     public synchronized void onPause() {
@@ -219,6 +220,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         if(mPermissionRequesting){
             return;
         }
+        pause();
         if(handlerThread != null){
             handlerThread.quitSafely();
             try {
