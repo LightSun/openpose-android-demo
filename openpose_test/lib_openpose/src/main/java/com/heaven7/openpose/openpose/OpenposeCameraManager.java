@@ -34,7 +34,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     /*private*/ static final String MP_OUTPUT_L1 = "Openpose/MConv_Stage6_L1_5_pointwise/BatchNorm/FusedBatchNorm";
     /*private*/ static final String MP_OUTPUT_L2 = "Openpose/MConv_Stage6_L2_5_pointwise/BatchNorm/FusedBatchNorm";
     //static final String MP_MODEL_FILE = "file:///android_asset/frozen_person_model.pb";
-    static final String MP_MODEL_FILE = "file:///android_asset/graph_opt.pb"; //识别率比 frozen_person_model好
+    //static final String MP_MODEL_FILE = "file:///android_asset/graph_opt.pb"; //识别率比 frozen_person_model好
+    static final String MP_MODEL_FILE = "file:///android_asset/graph_opt2.pb";//速度提升一倍
 
     private static final float TEXT_SIZE_DIP = 10;
     private static final int HUMAN_RADIUS = 3;
