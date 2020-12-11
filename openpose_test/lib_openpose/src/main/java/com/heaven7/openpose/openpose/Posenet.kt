@@ -246,21 +246,20 @@ class Posenet(
     }
 
     // Calculating the x and y coordinates of the keypoints with offset adjustment.
-    val xCoords = IntArray(numKeypoints)
-    val yCoords = IntArray(numKeypoints)
+    val xCoords = FloatArray(numKeypoints)
+    val yCoords = FloatArray(numKeypoints)
     val confidenceScores = FloatArray(numKeypoints)
     keypointPositions.forEachIndexed { idx, position ->
       val positionY = keypointPositions[idx].first
       val positionX = keypointPositions[idx].second
       yCoords[idx] = (
-        position.first / (height - 1).toFloat() * bitmap.height +
-          offsets[0][positionY][positionX][idx]
-        ).toInt()
+        position.first / (height - 1).toFloat() +
+          offsets[0][positionY][positionX][idx] / bitmap.height
+        )
       xCoords[idx] = (
-        position.second / (width - 1).toFloat() * bitmap.width +
-          offsets[0][positionY]
-          [positionX][idx + numKeypoints]
-        ).toInt()
+        position.second / (width - 1).toFloat() +
+          offsets[0][positionY][positionX][idx + numKeypoints] / bitmap.width
+        )
       confidenceScores[idx] = sigmoid(heatmaps[0][positionY][positionX][idx])
     }
 
@@ -268,8 +267,7 @@ class Posenet(
    // val keypointList = Array(numKeypoints) { KeyPoint() }
     var totalScore = 0.0f
     enumValues<BodyPart>().forEachIndexed { idx, it ->
-      val cor = Coord(xCoords[idx].toFloat(), yCoords[idx].toFloat(), confidenceScores[idx], 1)
-      map[castIdx(it)] = cor
+      map[castIdx(it)] = Coord(xCoords[idx], yCoords[idx], confidenceScores[idx], 1)
       totalScore += confidenceScores[idx]
      /* keypointList[idx].bodyPart = it
       keypointList[idx].position.x = xCoords[idx]
