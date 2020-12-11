@@ -188,6 +188,9 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         Trace.endSection();
     }
     //--------------------------- called by caller --------------------------------------------
+    public void onDestroy(){
+
+    }
     public void pause(){
         List<Fragment> fragments = mActivity.getSupportFragmentManager().getFragments();
         for (Fragment f : fragments){

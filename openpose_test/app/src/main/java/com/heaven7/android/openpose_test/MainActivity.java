@@ -82,7 +82,8 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mOCM = new OpenposeCameraManager(this, R.id.container);
         mOCM.setCallback(this);
         mOCM.setDebugCallback(debugCB);
-        mOCM.setDebug(false);
+        mOCM.setDebug(true);
+        mOCM.enableCount(true);
         mOCM.setDrawCallback(new DrawCallback0(this));
         mVg_camera.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
@@ -115,6 +116,14 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         if(mOCM != null){
             mOCM.onResume();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if(mOCM != null){
+            mOCM.onDestroy();
+        }
+        super.onDestroy();
     }
 
     public void onClickCamera(View view) {

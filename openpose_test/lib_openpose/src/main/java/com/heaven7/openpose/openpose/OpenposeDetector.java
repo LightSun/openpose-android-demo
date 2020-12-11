@@ -35,17 +35,11 @@ public final class OpenposeDetector {
     private final SparseArray<Disposable> mTaskMap = new SparseArray<Disposable>();
 
     private final Context mActivity;
-    private final Classifier detector;
+    private final Posenet detector;
 
     public OpenposeDetector(Context activity) {
         this.mActivity = activity.getApplicationContext();
-        detector = TensorFlowPoseDetector.create(
-                activity.getAssets(),
-                MP_MODEL_FILE,
-                MP_INPUT_SIZE,
-                MP_INPUT_NAME,
-                new String[]{MP_OUTPUT_L1, MP_OUTPUT_L2}
-        );
+        detector = new Posenet(activity.getApplicationContext(), "posenet_model.tflite", Device.CPU);
     }
     public int recognizeImageFromAssets(Scheduler scheduler, String assetPath, final Callback cb) {
         int expectSize = MP_INPUT_SIZE * RATIO;
@@ -125,7 +119,7 @@ public final class OpenposeDetector {
             ((DebugCallback) cb).debugCropImage(bitmap);
         }
         if(scheduler == null){
-            List<Classifier.Recognition> list = detector.recognizeImage(bitmap);
+            List<Classifier.Recognition> list = detector.estimateSinglePose(bitmap);
             List<Human> humans = null;
             if (list.size() > 0) {
                 Classifier.Recognition reg = list.get(0);
@@ -140,7 +134,7 @@ public final class OpenposeDetector {
             Disposable task = scheduler.newWorker().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    List<Classifier.Recognition> list = detector.recognizeImage(bitmap);
+                    List<Classifier.Recognition> list = detector.estimateSinglePose(bitmap);
                     List<Human> humans = null;
                     if (list.size() > 0) {
                         Classifier.Recognition reg = list.get(0);
@@ -179,6 +173,9 @@ public final class OpenposeDetector {
                 }
             });
         }
+    }
+    public void onDestroy(){
+        detector.close();
     }
     private class AssetPathDecoder implements ImageParser.IDecoder{
         @Override

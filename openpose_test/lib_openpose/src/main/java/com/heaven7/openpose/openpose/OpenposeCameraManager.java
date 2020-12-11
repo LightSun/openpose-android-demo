@@ -29,7 +29,7 @@ import java.util.TreeMap;
 public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     private static final String TAG = "OpenposeCM";
-    /*private*/ static final int MP_INPUT_SIZE = 368;
+    /*private*/ static final int MP_INPUT_SIZE = 257;
     /*private*/ static final String MP_INPUT_NAME = "image";
     /*private*/ static final String MP_OUTPUT_L1 = "Openpose/MConv_Stage6_L1_5_pointwise/BatchNorm/FusedBatchNorm";
     /*private*/ static final String MP_OUTPUT_L2 = "Openpose/MConv_Stage6_L2_5_pointwise/BatchNorm/FusedBatchNorm";
@@ -45,7 +45,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     private Integer sensorOrientation;
 
-    private Classifier detector;
+    private Posenet detector;
 
     private Bitmap rgbFrameBitmap = null;
     private Bitmap rgbFrameCopyBitmap;
@@ -91,6 +91,15 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     public void enableCount(boolean enable){
         mOpenposeDebug.setEnable(enable);
+    }
+
+    @Override
+    public void onDestroy() {
+        if(detector != null){
+            detector.close();
+            detector = null;
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -140,7 +149,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                     public void run() {
                         //LOGGER.i("Running detection on image " + currTimestamp);
                         mOpenposeDebug.start(OpenposeDebug.TYPE_RECOGNIZE);
-                        final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
+                        final List<Classifier.Recognition> results = detector.estimateSinglePose(croppedBitmap);
                         mOpenposeDebug.end();
                         //never for debug now
                         List<Human> humans = results.get(0).humans;
@@ -177,13 +186,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         int cropSize = MP_INPUT_SIZE;
 
         // Configure the detector
-        detector = TensorFlowPoseDetector.create(
-                mActivity.getAssets(),
-                MP_MODEL_FILE,
-                MP_INPUT_SIZE,
-                MP_INPUT_NAME,
-                new String[]{MP_OUTPUT_L1, MP_OUTPUT_L2}
-        );
+        detector = new Posenet(mActivity, "posenet_model.tflite", Device.CPU);
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
@@ -331,10 +334,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     @Override
     public void setDebug(final boolean debug) {
         super.setDebug(debug);
-        if(detector != null){
-            detector.enableStatLogging(debug);
-        }
     }
+
     protected int getScreenOrientation() {
         switch (mActivity.getWindowManager().getDefaultDisplay().getRotation()) {
             case Surface.ROTATION_270:

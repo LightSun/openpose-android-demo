@@ -1,4 +1,6 @@
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 30
@@ -46,7 +48,13 @@ android {
         }
     }
     lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
         abortOnError false
+    }
+    aaptOptions {
+        noCompress "tflite"
     }
 }
 
@@ -61,5 +69,8 @@ dependencies {
         exclude module: 'android-component'
     }
 
-    implementation files('libs/tensorflow.aar')
+    implementation 'org.tensorflow:tensorflow-lite:2.2.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.2.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
+
