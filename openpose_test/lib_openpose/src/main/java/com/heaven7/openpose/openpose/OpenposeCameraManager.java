@@ -233,6 +233,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         for (Map.Entry<Integer, Coord> en : parts.entrySet()){
             int idx = en.getKey();
             part_coord = en.getValue();
+            if(part_coord.score < MIN_CONFIDENCE){
+                continue;
+            }
             float w0 = info.finalWidth * info.scale2;
             float h0 = info.finalHeight * info.scale2;
             x = (part_coord.x * w0 - info.compensateWidth / 2) * info.scale1;
@@ -249,11 +252,12 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                 drawCallback.drawPoint(p.x, p.y, drawCallback.getPointRadius(match), mPaint);
             }
         }
-        Set<Integer> part_idxs = parts.keySet();
         for (int pair_order = 0; pair_order < Common.CocoPairsRender.length; pair_order++) {
             pair = Common.CocoPairsRender[pair_order];
-            //if pair[0] not in part_idxs or pair[1] not in part_idxs:
-            if (!part_idxs.contains(pair[0]) || !part_idxs.contains(pair[1])) {
+           //if pair not in ids. or confidence not enough. ignore
+            Coord c1 = parts.get(pair[0]);
+            Coord c2 = parts.get(pair[1]);
+            if(c1 == null || c1.score < MIN_CONFIDENCE || c2 == null || c2.score < MIN_CONFIDENCE){
                 continue;
             }
             match = mismatches.isEmpty() || (!mismatches.contains(pair[0]) && !mismatches.contains(pair[1]));
