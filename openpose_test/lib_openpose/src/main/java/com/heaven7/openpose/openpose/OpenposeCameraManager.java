@@ -37,6 +37,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     //static final String MP_MODEL_FILE = "file:///android_asset/graph_opt.pb"; //识别率比 frozen_person_model好
     static final String MP_MODEL_FILE = "file:///android_asset/graph_opt2.pb";//速度提升一倍
 
+    private static float MIN_CONFIDENCE = 0.5f;
+
     private static final float TEXT_SIZE_DIP = 10;
     private static final int HUMAN_RADIUS = 3;
 
