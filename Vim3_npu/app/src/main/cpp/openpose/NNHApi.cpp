@@ -17,6 +17,8 @@ static vsi_status vnn_VerifyGraph(vsi_nn_graph_t *graph);
 static vsi_status vnn_ProcessGraph(vsi_nn_graph_t *graph); //run graph
 static vsi_status vnn_PostProcessNeuralNetwork(vsi_nn_graph_t *graph);
 static void vnn_ReleaseNeuralNetwork (vsi_nn_graph_t *graph);
+
+static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, float ** out_coordX, float ** out_coordY, float** out_confidence);
 //---------------------------------------------------------------
 
 namespace Npu{
@@ -25,7 +27,7 @@ namespace Npu{
         graph = vnn_CreateNeuralNetwork(nbPath);
         rgbBuffer = static_cast<float *>(malloc(w * h * 3));
     }
-    bool NNHApi::inference(jobject bitmap) {
+    bool NNHApi::inference(jobject bitmap, float ** out_coordX, float ** out_coordY, float** out_confidence) {
         /* Pre process the image data */
         vsi_status status;
         if(_handle_input_bitmap(graph, bitmap, rgbBuffer) == VX_FAILURE){
@@ -244,4 +246,36 @@ static void vnn_ReleaseNeuralNetwork
     {
         vnn_ReleaseBufferImage();
     }
+}
+static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, float ** out_coordX, float ** out_coordY, float** out_confidence){
+
+    uint32_t sz,stride;
+    vsi_nn_tensor_t *tensor;
+    vsi_status status = VSI_FAILURE;
+    float *buffer = NULL;
+    uint8_t *tensor_data = NULL;
+
+
+    for(uint32_t i = 0; i < graph->output.num; i++){
+        tensor = vsi_nn_GetTensor(graph, graph->output.tensors[i]);
+        //compute sz
+        sz = 1;
+        for(uint32_t j = 0; j < tensor->attr.dim_num; j++)
+        {
+            sz *= tensor->attr.size[j];
+        }
+        //data
+        stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type);
+        tensor_data = (uint8_t *)vsi_nn_ConvertTensorToData(graph, tensor);
+        buffer = (float *)malloc(sizeof(float) * sz);
+
+        for(uint32_t j = 0; j < sz; j++)
+        {
+            status = vsi_nn_DtypeToFloat32(&tensor_data[stride * j], &buffer[j], &tensor->attr.dtype);
+            //TODO handle
+        }
+        vsi_nn_Free(tensor_data);
+    }
+
+    return VSI_SUCCESS;
 }

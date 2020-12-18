@@ -31,7 +31,7 @@ namespace Npu{
     public:
         void init(const char* nbPath, int w, int h);
 
-        bool inference(jobject bitmap);
+        bool inference(jobject bitmap, float ** out_coordX, float ** out_coordY, float** out_confidence);
 
         void release();
 
