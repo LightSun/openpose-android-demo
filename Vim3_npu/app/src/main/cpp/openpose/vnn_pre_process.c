@@ -502,7 +502,7 @@ static uint8_t *_get_qtensor_data
 
     for(i = 0; i < sz; i++)
     {
-        if(fscanf( tensorFile, "%f ", &fval ) != 1)
+        if(fscanf(tensorFile, "%f ", &fval) != 1)
         {
             printf("Read tensor file fail.\n");
             printf("Please check file lines or if the file contains illegal characters\n");
@@ -541,7 +541,7 @@ error:
     if(tensorFile)fclose(tensorFile);
     return NULL;
 }
-
+//TODO pass data to tensor-type
 static uint8_t *_get_tensor_data
     (
     vsi_nn_tensor_t *tensor,
@@ -602,6 +602,7 @@ static uint8_t *_get_jpeg_data
     fdata = NULL;
     data = NULL;
 
+    //todo why decode to bmp?
     bmpData = _decode_jpeg(filename, tensor);
     TEST_CHECK_PTR(bmpData, final);
 

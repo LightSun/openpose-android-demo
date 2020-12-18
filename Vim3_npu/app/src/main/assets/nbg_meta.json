@@ -1,0 +1,61 @@
+{
+    "Inputs": {
+        "input_0": {
+            "name": "input",
+            "shape": [
+                1,
+                257,
+                257,
+                3
+            ],
+            "format": "nhwc",
+            "dtype": "float32"
+        }
+    },
+    "Outputs": {
+        "output_59": {
+            "name": "output",
+            "shape": [
+                1,
+                9,
+                9,
+                17
+            ],
+            "format": "nhwc",
+            "dtype": "float32"
+        },
+        "output_60": {
+            "name": "output",
+            "shape": [
+                1,
+                9,
+                9,
+                34
+            ],
+            "format": "nhwc",
+            "dtype": "float32"
+        },
+        "output_61": {
+            "name": "output",
+            "shape": [
+                1,
+                9,
+                9,
+                32
+            ],
+            "format": "nhwc",
+            "dtype": "float32"
+        },
+        "output_62": {
+            "name": "output",
+            "shape": [
+                1,
+                9,
+                9,
+                32
+            ],
+            "format": "nhwc",
+            "dtype": "float32"
+        }
+    }
+}
