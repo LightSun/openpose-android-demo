@@ -275,7 +275,8 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, float ** out_coordX, fl
             //TODO handle
         }
         vsi_nn_Free(tensor_data);
+        free(buffer);
     }
 
-    return VSI_SUCCESS;
+    return status;
 }
