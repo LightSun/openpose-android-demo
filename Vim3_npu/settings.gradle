@@ -1,0 +1,2 @@
+rootProject.name='Vim3App'
+include ':app'
