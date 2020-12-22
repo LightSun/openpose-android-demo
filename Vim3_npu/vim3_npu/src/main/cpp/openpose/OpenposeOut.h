@@ -7,35 +7,48 @@
 
 #include "ext/Array.h"
 
-namespace Npu{
+#define OUT_REUSE 1
 
-    class OpenposeOut{
+namespace Npu {
+
+    class OpenposeOut {
     public:
-        h7::FloatArray* xCoords;
-        h7::FloatArray* yCoords;
-        h7::FloatArray* confidenceScores;
+        h7::FloatArray *xCoords;
+        h7::FloatArray *yCoords;
+        h7::FloatArray *confidenceScores;
 
-        ~OpenposeOut(){
+        ~OpenposeOut() {
             freeAll();
         }
-        void set(int size){
-            freeAll();
-            xCoords = new h7::FloatArray(static_cast<size_t>(size));
-            yCoords = new h7::FloatArray(static_cast<size_t>(size));
-            confidenceScores = new h7::FloatArray(static_cast<size_t>(size));
+
+        void set(int size) {
+            if (xCoords != nullptr) {
+#ifdef OUT_REUSE
+#else
+    freeAll();
+    xCoords = new h7::FloatArray(static_cast<size_t>(size));
+    yCoords = new h7::FloatArray(static_cast<size_t>(size));
+    confidenceScores = new h7::FloatArray(static_cast<size_t>(size));
+#endif
+            } else {
+                xCoords = new h7::FloatArray(static_cast<size_t>(size));
+                yCoords = new h7::FloatArray(static_cast<size_t>(size));
+                confidenceScores = new h7::FloatArray(static_cast<size_t>(size));
+            }
         }
-        void freeAll(){
-            if(xCoords){
+
+        void freeAll() {
+            if (xCoords) {
                 delete xCoords;
                 xCoords = nullptr;
             }
-            if(yCoords){
+            if (yCoords) {
                 delete yCoords;
                 yCoords = nullptr;
             }
-            if(confidenceScores){
+            if (confidenceScores) {
                 delete confidenceScores;
-                yCoords = nullptr;
+                confidenceScores = nullptr;
             }
         }
     };

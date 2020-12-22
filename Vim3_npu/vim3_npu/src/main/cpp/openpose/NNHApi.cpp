@@ -2,6 +2,7 @@
 // Created by Administrator on 2020/12/18 0018.
 //
 
+#include <android/bitmap.h>
 #include "NNHApi.h"
 #include "java_env.h"
 #include "JNIBridge.h"
@@ -20,19 +21,26 @@ static vsi_status vnn_ProcessGraph(vsi_nn_graph_t *graph); //run graph
 static vsi_status vnn_PostProcessNeuralNetwork(vsi_nn_graph_t *graph);
 static void vnn_ReleaseNeuralNetwork (vsi_nn_graph_t *graph);
 
-static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, float ** out_coordX, float ** out_coordY, float** out_confidence);
+static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmapH,Npu::OpenposeOut& out);
 //---------------------------------------------------------------
 
 namespace Npu{
 
-    void NNHApi::init(const char *nbPath, int w, int h) {
+    void NNHApi::NNHApi(const char *nbPath, int w, int h) {
+        this->nbPath = static_cast<char *>(malloc(strlen(nbPath) + 1));
+        strcpy(this->nbPath, nbPath);
+        rgbBuffer = static_cast<float *>(malloc(sizeof(float)* w * h * 3));
         graph = vnn_CreateNeuralNetwork(nbPath);
-        rgbBuffer = static_cast<float *>(malloc(w * h * 3));
     }
-    bool NNHApi::inference(jobject bitmap, float ** out_coordX, float ** out_coordY, float** out_confidence) {
+    bool NNHApi::inference(jobject bitmap, Npu::OpenposeOut& out) {
+        AndroidBitmapInfo bmpInfo = {0};
+        if (AndroidBitmap_getInfo(ensureJNIEnv(), bitmap, &bmpInfo) < 0) {
+            return false;
+        }
         /* Pre process the image data */
         vsi_status status;
         if(_handle_input_bitmap(graph, bitmap, rgbBuffer) == VX_FAILURE){
+            releaseGraph();
             return false;
         }
         const char* msg;
@@ -54,16 +62,27 @@ namespace Npu{
         }*/
 
         /* Post process output data */
-        msg = "vnn_PostProcessNeuralNetwork failed";
-       //TODO status = vnn_PostProcessNeuralNetwork(graph );
-        TEST_CHECK_STATUS(status, final );
+        msg = "vnn_PostProcess failed";
+        status = vnn_PostProcess(graph, bmpInfo.width, bmpInfo.height, out);
+        TEST_CHECK_STATUS(status, final);
 
         final:
+        releaseGraph();
         LOGW("%s", msg);
         return true;
     }
-    void NNHApi::release() {
-        vnn_ReleaseNeuralNetwork(graph);
+    void NNHApi::~NNHApi() {
+        free(rgbBuffer);
+        if(nbPath){
+            free(nbPath);
+            nbPath = nullptr;
+        }
+    }
+    void NNHApi::releaseGraph() {
+        if(graph){
+            vnn_ReleaseNeuralNetwork(graph);
+            graph = nullptr;
+        }
     }
 }
 
@@ -129,8 +148,9 @@ static vsi_status _handle_input_bitmap (
     TEST_CHECK_STATUS(status, final);
 
     /* Save the image data to file */
-    snprintf(dumpInput, sizeof(dumpInput), "input_%d.dat", 0);
-    vsi_nn_SaveTensorToBinary(graph, tensor, dumpInput);
+    //TODO need debug input tensor?
+    //snprintf(dumpInput, sizeof(dumpInput), "input_%d.dat", 0);
+    //vsi_nn_SaveTensorToBinary(graph, tensor, dumpInput);
 
     status = VSI_SUCCESS;
     final:

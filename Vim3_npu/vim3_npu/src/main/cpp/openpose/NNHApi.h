@@ -30,15 +30,16 @@ namespace Npu{
     class NNHApi{
 
     public:
-        void init(const char* nbPath, int w, int h);
+        NNHApi(const char* nbPath, int w, int h);
+        ~NNHApi();
 
-        bool inference(jobject bitmap, float ** out_coordX, float ** out_coordY, float** out_confidence);
-
-        void release();
+        bool inference(jobject bitmap, Npu::OpenposeOut& out);
 
     private:
+        void releaseGraph();
         vsi_nn_graph_t * graph;
         float* rgbBuffer;
+        char* nbPath;
     };
 }
 

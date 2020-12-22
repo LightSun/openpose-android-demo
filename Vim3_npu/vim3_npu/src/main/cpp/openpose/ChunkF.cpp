@@ -8,6 +8,7 @@ using namespace h7;
 
 namespace Npu{
 
+    //1 * 3 * 5 * 9 ->135 ->
     static bool group1(ChunkF* root,int shape1, int shape2, int shape3, int shape4);
     static bool group2(ChunkF* root,int shape1, int shape2, int shape3);
     static bool group3(ChunkF* root,int shape1, int shape2);
