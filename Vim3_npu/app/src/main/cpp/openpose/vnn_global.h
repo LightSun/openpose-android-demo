@@ -12,9 +12,6 @@ extern "C"{
 #endif
 #include <stdint.h>
 
-struct vsi_nn_preprocess_base_t;
-struct vsi_nn_postprocess_base_t;
-
 typedef struct {
     uint32_t graph_input_idx;
     vsi_nn_preprocess_base_t *preprocesses;

@@ -15,7 +15,16 @@ add_library(jpeg SHARED IMPORTED)
 set_target_properties(jpeg PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libjpeg.so)
 
 add_library(openpose_npu SHARED ${src_openpose})
+find_library( # Sets the name of the path variable.
+        log-lib
+
+        # Specifies the name of the NDK library that
+        # you want CMake to locate.
+        log)
+
 target_link_libraries(openpose_npu
      ovxlib
      jpeg
+     jnigraphics
+     ${log-lib}
 )

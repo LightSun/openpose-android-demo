@@ -6,6 +6,7 @@
 #include "java_env.h"
 #include "JNIBridge.h"
 #include "and_log.h"
+#include "ChunkF.h"
 
 static uint64_t get_perf_count();
 static uint8_t *_get_tensor_data(vsi_nn_tensor_t *tensor, jobject jbitmap, float *pDouble);
@@ -53,11 +54,11 @@ namespace Npu{
 
         /* Post process output data */
         msg = "vnn_PostProcessNeuralNetwork failed";
-        status = vnn_PostProcessNeuralNetwork(graph );
+       //TODO status = vnn_PostProcessNeuralNetwork(graph );
         TEST_CHECK_STATUS(status, final );
 
         final:
-        LOGW(msg);
+        LOGW("%s", msg);
         return true;
     }
     void NNHApi::release() {
