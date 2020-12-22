@@ -1,18 +1,27 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 28
     buildToolsVersion "28.0.2"
 
     defaultConfig {
-        applicationId "com.heaven7.android.vim3_npu"
         minSdkVersion 21
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles 'consumer-rules.pro'
 
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11 -fno-exceptions -O0"
+            }
+        }
+        ndk {
+            // stl "gnustl_shared"
+            abiFilters "armeabi-v7a"
+        }
     }
 
     buildTypes {
@@ -29,6 +38,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
     lintOptions {
         checkReleaseBuilds false
         // Or, if you prefer, you can continue to check for errors in release builds,
@@ -42,14 +56,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
-
-    implementation project(":vim3_npu")
+   //implementation 'androidx.appcompat:appcompat:1.2.0'
 }

@@ -353,9 +353,9 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
         auto position = keypointPositions.get(idx);
         positionY = position->first;
         positionX = position->second;
-        x = position->first * 1f/ (height - 1) +
+        x = position->first *1.0f/ (height - 1) +
             offsets->get(0)->get(positionY)->get(positionX)->get(idx) / bitmapH;
-        y = position->second * 1f/ (width - 1) +
+        y = position->second * 1.0f/ (width - 1) +
             offsets->get(0)->get(positionY)->get(positionX)->get(idx + numKeypoints) / bitmapW;
         score = sigmoid(heatmaps->get(0)->get(positionY)->get(positionX)->get(idx));
 
