@@ -23,13 +23,9 @@ namespace Npu {
 
         void set(int size) {
             if (xCoords != nullptr) {
-#ifdef OUT_REUSE
-#else
-    freeAll();
-    xCoords = new h7::FloatArray(static_cast<size_t>(size));
-    yCoords = new h7::FloatArray(static_cast<size_t>(size));
-    confidenceScores = new h7::FloatArray(static_cast<size_t>(size));
-#endif
+                xCoords->clear();
+                yCoords->clear();
+                confidenceScores->clear();
             } else {
                 xCoords = new h7::FloatArray(static_cast<size_t>(size));
                 yCoords = new h7::FloatArray(static_cast<size_t>(size));

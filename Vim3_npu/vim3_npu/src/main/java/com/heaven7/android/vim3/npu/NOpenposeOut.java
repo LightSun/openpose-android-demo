@@ -1,6 +1,9 @@
 package com.heaven7.android.vim3.npu;
 
-public class NOpenposeOut {
+/**
+ * native openpose output
+ */
+public final class NOpenposeOut {
 
     private long ptr;
 

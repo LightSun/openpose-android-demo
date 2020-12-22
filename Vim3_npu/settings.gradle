@@ -1,3 +1,4 @@
 rootProject.name='Vim3App'
 include ':app'
 include ':vim3_npu'
+include ':openpose_api'

@@ -37,11 +37,13 @@ namespace Npu{
         if (AndroidBitmap_getInfo(ensureJNIEnv(), bitmap, &bmpInfo) < 0) {
             return false;
         }
+        if(graph == nullptr){
+            graph = vnn_CreateNeuralNetwork(nbPath);
+        }
         /* Pre process the image data */
         vsi_status status;
         if(_handle_input_bitmap(graph, bitmap, rgbBuffer) == VX_FAILURE){
-            releaseGraph();
-            return false;
+            goto final;
         }
         const char* msg;
         /* Verify graph */
@@ -65,11 +67,12 @@ namespace Npu{
         msg = "vnn_PostProcess failed";
         status = vnn_PostProcess(graph, bmpInfo.width, bmpInfo.height, out);
         TEST_CHECK_STATUS(status, final);
+        return true;
 
         final:
         releaseGraph();
         LOGW("%s", msg);
-        return true;
+        return false;
     }
     void NNHApi::~NNHApi() {
         free(rgbBuffer);
