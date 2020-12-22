@@ -11,14 +11,12 @@
 namespace Npu {
     class ChunkF {
     public:
-        int size;
+        int _size;
         float *data;
         h7::Array<h7::Array<h7::Array<h7::Array<ChunkF *> *> *>*> *children4;
         h7::Array<h7::Array<h7::Array<ChunkF *> *> *> *children3;
         h7::Array<h7::Array<ChunkF *> *> *children2;
         h7::Array<ChunkF *> *children1;
-
-        h7::Array<ChunkF *> chunkData;
 
         class Iterator : public h7::ArrayIterator<ChunkF *> {
             bool iterate(h7::Array<ChunkF *>* arr, int index, ChunkF *& ele) override ;
@@ -29,14 +27,16 @@ namespace Npu {
 
         bool parse(int groupCount, h7::Array<ChunkF *> *out);
 
-        //1 * 3 * 7 * 9
-        bool parseTree4(int shape1, int shape2, int shape3, int shape4);
+        //1 * 3 * 7 * 9 -> 9 ->3 -> 7 -> 1
+        bool group(int shape1, int shape2, int shape3, int shape4);
 
-        bool parseTree3(int shape1, int shape2, int shape3);
-
-        bool parseTree2(int shape1, int shape2);
-
-        bool parseTree1(int shape1);
+        /**
+         *
+         * @param shape the raw shape array
+         * @param count the array count
+         * @return true if group ok
+         */
+        bool groupRaw(int* shape, int count);
 
         float* getPointer(int index) {
             return &data[index];
@@ -47,9 +47,12 @@ namespace Npu {
         void set(int index, float val) {
             data[index] = val;
         }
-
+        int size(){
+            return this->_size;
+        }
+        h7::Array<h7::Array<h7::Array<ChunkF *> *> *> * getChild(int index);
     private:
-        void freeChunkData();
+        void initChildren();
     };
 }
 

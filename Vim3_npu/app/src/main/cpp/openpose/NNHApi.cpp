@@ -7,6 +7,7 @@
 #include "JNIBridge.h"
 #include "and_log.h"
 #include "ChunkF.h"
+#include "Pair.h"
 
 static uint64_t get_perf_count();
 static uint8_t *_get_tensor_data(vsi_nn_tensor_t *tensor, jobject jbitmap, float *pDouble);
@@ -248,14 +249,19 @@ static void vnn_ReleaseNeuralNetwork
         vnn_ReleaseBufferImage();
     }
 }
-static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, float ** out_coordX, float ** out_coordY, float** out_confidence){
+/** Returns value within [0,1].   */
+static float sigmoid(float x){
+    return (1.0f / (1.0f + exp(-x)));
+}
+static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmapH,Npu::OpenposeOut& out){
 
     uint32_t sz,stride;
     vsi_nn_tensor_t *tensor;
     vsi_status status = VSI_FAILURE;
-    float *buffer = NULL;
+   // float *buffer = NULL;
     uint8_t *tensor_data = NULL;
 
+    h7::Array<Npu::ChunkF*> outputs;
 
     for(uint32_t i = 0; i < graph->output.num; i++){
         tensor = vsi_nn_GetTensor(graph, graph->output.tensors[i]);
@@ -268,16 +274,113 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, float ** out_coordX, fl
         //data
         stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type);
         tensor_data = (uint8_t *)vsi_nn_ConvertTensorToData(graph, tensor);
-        buffer = (float *)malloc(sizeof(float) * sz);
+
+        auto pF = new Npu::ChunkF(sz);
+        outputs.add(pF);
+        //buffer = (float *)malloc(sizeof(float) * sz);
 
         for(uint32_t j = 0; j < sz; j++)
         {
-            status = vsi_nn_DtypeToFloat32(&tensor_data[stride * j], &buffer[j], &tensor->attr.dtype);
-            //TODO handle
+           // status = vsi_nn_DtypeToFloat32(&tensor_data[stride * j], &buffer[j], &tensor->attr.dtype);
+            status = vsi_nn_DtypeToFloat32(&tensor_data[stride * j], pF->getPointer(j), &tensor->attr.dtype);
         }
         vsi_nn_Free(tensor_data);
-        free(buffer);
+        auto groupResult = pF->groupRaw(reinterpret_cast<int *>(tensor->attr.size),
+                                        tensor->attr.dim_num);
+        LOGD("tensor idx = %d ,groupResult = %s", i, (groupResult ? "true" : "false"));
+       // free(buffer);
     }
 
+    auto heatmaps = outputs.get(0)->getChild(0);
+    auto offsets = outputs.get(1)->getChild(0);
+
+    int height = heatmaps->get(0)->size();
+    int width = heatmaps->get(0)->get(0)->size();
+    int numKeypoints = heatmaps->get(0)->get(0)->get(0)->size();
+    LOGD("width = %d, height = %d, numKeypoints = %d", width, height, numKeypoints);
+
+    // Finds the (row, col) locations of where the keypoints are most likely to be.
+    h7::Array<Npu::Pair*> keypointPositions;
+    //init keypointPositions
+    Npu::Pair * f;
+    for (int i = 0; i < numKeypoints; ++i) {
+        f = new Npu::Pair();
+        keypointPositions.add(f);
+    }
+    // handle keypointPositions
+    float maxVal;
+    int maxRow;
+    int maxCol;
+    for (int keypoint = 0; keypoint < numKeypoints; ++keypoint) {
+        maxVal = heatmaps->get(0)->get(0)->get(0)->get(keypoint);
+        maxRow = 0;
+        maxCol = 0;
+        for (int row = 0; row < height; ++row) { //row
+            auto pArray = heatmaps->get(0)->get(row);
+            for (int col = 0; col < width; ++col) { //col
+                if(pArray->get(col)->get(keypoint) > maxVal){
+                    maxVal = heatmaps->get(0)->get(row)->get(col)->get(keypoint);
+                    maxRow = row;
+                    maxCol = col;
+                }
+            }
+        }
+        keypointPositions[keypoint]->set(maxRow, maxCol);
+    }
+   /* val keypointPositions = Array(numKeypoints) { Pair(0, 0) }
+    for (keypoint in 0 until numKeypoints) {
+        var maxVal = heatmaps[0][0][0][keypoint]
+        var maxRow = 0
+        var maxCol = 0
+        for (row in 0 until height) {
+            for (col in 0 until width) {
+                if (heatmaps[0][row][col][keypoint] > maxVal) {
+                    maxVal = heatmaps[0][row][col][keypoint]
+                    maxRow = row
+                    maxCol = col
+                }
+            }
+        }
+        keypointPositions[keypoint] = Pair(maxRow, maxCol)
+    }*/
+
+    // Calculating the x and y coordinates of the keypoints with offset adjustment.
+    out.set(numKeypoints);
+    int positionY;
+    int positionX;
+    float x, y, score;
+    for (int idx = 0; idx < keypointPositions.size(); ++idx) {
+        auto position = keypointPositions.get(idx);
+        positionY = position->first;
+        positionX = position->second;
+        x = position->first * 1f/ (height - 1) +
+            offsets->get(0)->get(positionY)->get(positionX)->get(idx) / bitmapH;
+        y = position->second * 1f/ (width - 1) +
+            offsets->get(0)->get(positionY)->get(positionX)->get(idx + numKeypoints) / bitmapW;
+        score = sigmoid(heatmaps->get(0)->get(positionY)->get(positionX)->get(idx));
+
+        out.xCoords->add(x);
+        out.yCoords->add(y);
+        out.confidenceScores->add(score);
+    }
+    /*val xCoords = FloatArray(numKeypoints)
+    val yCoords = FloatArray(numKeypoints)
+    val confidenceScores = FloatArray(numKeypoints)
+    keypointPositions.forEachIndexed { idx, position ->
+                val positionY = keypointPositions[idx].first
+        val positionX = keypointPositions[idx].second
+        yCoords[idx] = (
+                position.first / (height - 1).toFloat() +
+                offsets[0][positionY][positionX][idx] / bitmap.height
+        )
+        xCoords[idx] = (
+                position.second / (width - 1).toFloat() +
+                offsets[0][positionY][positionX][idx + numKeypoints] / bitmap.width
+        )
+        confidenceScores[idx] = sigmoid(heatmaps[0][positionY][positionX][idx])
+    }*/
+
+    auto it = Npu::ChunkF::Iterator();
+    outputs.clear(&it);
     return status;
 }

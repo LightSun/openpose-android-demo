@@ -24,6 +24,7 @@
 #include "vnn_pre_process.h"
 #include "vnn_post_process.h"
 #include "vnn_mobilenetv1tfite.h"
+#include "OpenposeOut.h"
 
 namespace Npu{
     class NNHApi{

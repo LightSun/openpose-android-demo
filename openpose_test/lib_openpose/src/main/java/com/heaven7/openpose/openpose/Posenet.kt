@@ -231,6 +231,7 @@ class Posenet(
         val height = heatmaps[0].size
         val width = heatmaps[0][0].size
         val numKeypoints = heatmaps[0][0][0].size
+        println("width = $width, height = $height, numKeypoints = $numKeypoints")
 
         // Finds the (row, col) locations of where the keypoints are most likely to be.
         val keypointPositions = Array(numKeypoints) { Pair(0, 0) }
