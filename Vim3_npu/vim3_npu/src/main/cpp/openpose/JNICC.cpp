@@ -51,7 +51,7 @@ extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_heaven7_android_vim3_npu_NpuOpenpose_nInit(JNIEnv *env, jclass clazz, jstring nb_path,
                                                     jint w, jint h) {
-    auto path = env->GetStringUTFChars(nb_path, false);
+    auto path = env->GetStringUTFChars(nb_path, nullptr);
     auto pApi = new Npu::NNHApi(path, w, h);
     env->ReleaseStringUTFChars(nb_path, path);
     return reinterpret_cast<jlong>(pApi);

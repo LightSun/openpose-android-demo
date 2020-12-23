@@ -26,7 +26,7 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
 
 namespace Npu{
 
-    void NNHApi::NNHApi(const char *nbPath, int w, int h) {
+    NNHApi::NNHApi(const char *nbPath, int w, int h) {
         this->nbPath = static_cast<char *>(malloc(strlen(nbPath) + 1));
         strcpy(this->nbPath, nbPath);
         rgbBuffer = static_cast<float *>(malloc(sizeof(float)* w * h * 3));
@@ -74,7 +74,7 @@ namespace Npu{
         LOGW("%s", msg);
         return false;
     }
-    void NNHApi::~NNHApi() {
+    NNHApi::~NNHApi() {
         free(rgbBuffer);
         if(nbPath){
             free(nbPath);
