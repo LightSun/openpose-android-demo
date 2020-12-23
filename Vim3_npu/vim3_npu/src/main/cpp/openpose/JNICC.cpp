@@ -2,11 +2,9 @@
 // Created by Administrator on 2020/12/22 0022.
 //
 
-#ifndef VIM3APP_JNICC_CPP
-#define VIM3APP_JNICC_CPP
-
 #include "jni.h"
 #include "OpenposeOut.h"
+#include "NNHApi.h"
 
 #define EC_JNIEXPORT extern "C" JNIEXPORT
 #define SURFACE_VIEW_JAVA_PREFIX                        com_heaven7_android_vim3_npu
@@ -48,4 +46,28 @@ EC_JNIEXPORT jfloat JNICALL SURFACE_VIEW_JAVA_API2(nGetOutScore, jlong ptr, jint
     return noo->confidenceScores->get(index);
 }
 
-#endif //VIM3APP_JNICC_CPP
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_heaven7_android_vim3_npu_NpuOpenpose_nInit(JNIEnv *env, jclass clazz, jstring nb_path,
+                                                    jint w, jint h) {
+    auto path = env->GetStringUTFChars(nb_path, false);
+    auto pApi = new Npu::NNHApi(path, w, h);
+    env->ReleaseStringUTFChars(nb_path, path);
+    return reinterpret_cast<jlong>(pApi);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_heaven7_android_vim3_npu_NpuOpenpose_nDestroy(JNIEnv *env, jclass clazz, jlong nn_ptr) {
+
+    Npu::NNHApi* api = reinterpret_cast<Npu::NNHApi *>(nn_ptr);
+    delete api;
+}
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_heaven7_android_vim3_npu_NpuOpenpose_nInference(JNIEnv *env, jclass clazz, jlong nn_ptr,
+                                                         jlong out_ptr, jobject bitmap) {
+    Npu::NNHApi* api = reinterpret_cast<Npu::NNHApi *>(nn_ptr);
+    Npu::OpenposeOut* out = reinterpret_cast<Npu::OpenposeOut *>(out_ptr);
+    return static_cast<jboolean>(api->inference(bitmap, *out));
+}

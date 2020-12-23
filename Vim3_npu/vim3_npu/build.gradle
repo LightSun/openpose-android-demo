@@ -63,4 +63,7 @@ dependencies {
 
    //implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation project(":openpose_api")
+    implementation('com.github.LightSun:util-v1:2.0.1') {
+        exclude module: 'android-component'
+    }
 }
