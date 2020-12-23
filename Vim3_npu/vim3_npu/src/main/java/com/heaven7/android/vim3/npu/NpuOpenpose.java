@@ -36,7 +36,9 @@ public class NpuOpenpose implements OpenposeApi {
     }
     @Override
     public void initialize(Context context) {
-        mNNApi = nInit(SAVE_DIR + "/" + NB_NAME, 257 , 257);
+        if(mNNApi == 0){
+            mNNApi = nInit(SAVE_DIR + "/" + NB_NAME, 257 , 257);
+        }
     }
     @Override
     public void destroy() {
