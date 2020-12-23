@@ -15,8 +15,11 @@ import android.view.Surface;
 import androidx.annotation.IdRes;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.heaven7.openpose.openpose.bean.Coord;
-import com.heaven7.openpose.openpose.bean.Human;
+import com.heaven7.android.openpose.api.Common;
+import com.heaven7.android.openpose.api.OpenposeApi;
+import com.heaven7.android.openpose.api.bean.Coord;
+import com.heaven7.android.openpose.api.bean.Human;
+import com.heaven7.android.openpose.api.bean.Recognition;
 import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
 import com.heaven7.openpose.openpose.env.ImageUtils;
 
@@ -47,7 +50,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     private Integer sensorOrientation;
 
-    private Posenet detector;
+    private OpenposeApi detector;
 
     private Bitmap rgbFrameBitmap = null;
     private Bitmap rgbFrameCopyBitmap;
@@ -95,10 +98,14 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         mOpenposeDebug.setEnable(enable);
     }
 
+    public void setOpenposeApi(OpenposeApi api){
+        this.detector = api;
+    }
+
     @Override
     public void onDestroy() {
         if(detector != null){
-            detector.close();
+            detector.destroy();
             detector = null;
         }
         super.onDestroy();
@@ -151,7 +158,7 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                     public void run() {
                         //LOGGER.i("Running detection on image " + currTimestamp);
                         mOpenposeDebug.start(OpenposeDebug.TYPE_RECOGNIZE);
-                        final List<Classifier.Recognition> results = detector.estimateSinglePose(croppedBitmap);
+                        final List<Recognition> results = detector.inference(croppedBitmap);
                         mOpenposeDebug.end();
                         //never for debug now
                         List<Human> humans = results.get(0).humans;
@@ -188,7 +195,11 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         int cropSize = MP_INPUT_SIZE;
 
         // Configure the detector
-        detector = new Posenet(mActivity, "posenet_model.tflite", Device.CPU);
+       // detector = new Posenet(mActivity, "posenet_model.tflite", Device.CPU);
+        if(detector == null){
+            detector = new JavaPosenet();
+        }
+        detector.initialize(mActivity);
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();

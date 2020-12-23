@@ -16,17 +16,17 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
+import com.heaven7.android.openpose.api.Common;
+import com.heaven7.android.openpose.api.bean.Coord;
+import com.heaven7.android.openpose.api.bean.Human;
 import com.heaven7.java.base.util.Predicates;
 import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.java.visitor.MapFireVisitor;
 import com.heaven7.java.visitor.collection.KeyValuePair;
 import com.heaven7.java.visitor.collection.VisitServices;
-import com.heaven7.openpose.openpose.Common;
 import com.heaven7.openpose.openpose.OpenposeCameraManager;
 import com.heaven7.openpose.openpose.OpenposeDetector;
 import com.heaven7.openpose.openpose.OverlayView;
-import com.heaven7.openpose.openpose.bean.Coord;
-import com.heaven7.openpose.openpose.bean.Human;
 import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
 
 import java.util.Arrays;

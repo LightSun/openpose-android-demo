@@ -17,20 +17,25 @@ package com.heaven7.openpose.openpose
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.RectF
 import android.os.SystemClock
 import android.util.Log
-import com.heaven7.openpose.openpose.bean.Coord
-import com.heaven7.openpose.openpose.bean.Human
+import com.heaven7.android.openpose.api.Common
+import com.heaven7.android.openpose.api.bean.Coord
+import com.heaven7.android.openpose.api.bean.Human
+import com.heaven7.android.openpose.api.bean.Recognition
+import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.gpu.GpuDelegate
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
+import java.util.*
+import kotlin.collections.HashMap
+import kotlin.collections.forEachIndexed
+import kotlin.collections.listOf
+import kotlin.collections.set
 import kotlin.math.exp
-import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.gpu.GpuDelegate
-import java.util.ArrayList
 
 enum class BodyPart {
     NOSE,
@@ -203,7 +208,7 @@ class Posenet(
      *      person: a Person object containing data about keypoint locations and confidence scores
      */
     @Suppress("UNCHECKED_CAST")
-    fun estimateSinglePose(bitmap: Bitmap): ArrayList<Classifier.Recognition> {
+    fun estimateSinglePose(bitmap: Bitmap): ArrayList<Recognition> {
         val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val inputArray = arrayOf(initInputArray(bitmap))
         Log.i(
@@ -302,10 +307,10 @@ class Posenet(
         //build result
         val hu = Human()
         hu.parts = map
-        val r0 = Classifier.Recognition("a", totalScore / numKeypoints)
+        val r0 = Recognition("a", totalScore / numKeypoints)
         r0.humans = ArrayList<Human>()
         r0.humans.add(hu)
-        val list = ArrayList<Classifier.Recognition>();
+        val list = ArrayList<Recognition>();
         list.add(r0)
         return list
     }

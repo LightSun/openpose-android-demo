@@ -4,6 +4,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
+import com.heaven7.android.openpose.api.OpenposeApi;
+import com.heaven7.android.openpose.api.bean.Human;
+import com.heaven7.android.openpose.api.bean.Recognition;
 import com.heaven7.core.util.ImageParser;
 import com.heaven7.java.base.util.Disposable;
 import com.heaven7.java.base.util.IOUtils;
@@ -12,7 +15,6 @@ import com.heaven7.java.visitor.MapFireVisitor;
 import com.heaven7.java.visitor.collection.KeyValuePair;
 import com.heaven7.java.visitor.collection.VisitServices;
 import com.heaven7.java.visitor.util.SparseArray;
-import com.heaven7.openpose.openpose.bean.Human;
 import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
 import com.heaven7.openpose.openpose.env.ImageUtils;
 import com.heaven7.openpose.openpose.env.SimpleResizeCallback;
@@ -22,11 +24,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_INPUT_NAME;
 import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_INPUT_SIZE;
-import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_MODEL_FILE;
-import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_OUTPUT_L1;
-import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_OUTPUT_L2;
 
 public final class OpenposeDetector {
 
@@ -35,11 +33,14 @@ public final class OpenposeDetector {
     private final SparseArray<Disposable> mTaskMap = new SparseArray<Disposable>();
 
     private final Context mActivity;
-    private final Posenet detector;
+    private final OpenposeApi detector;
 
     public OpenposeDetector(Context activity) {
+        this(activity, new JavaPosenet(activity));
+    }
+    public OpenposeDetector(Context activity, OpenposeApi api) {
         this.mActivity = activity.getApplicationContext();
-        detector = new Posenet(activity.getApplicationContext(), "posenet_model.tflite", Device.CPU);
+        detector = api;
     }
     public int recognizeImageFromAssets(Scheduler scheduler, String assetPath, final Callback cb) {
         int expectSize = MP_INPUT_SIZE * RATIO;
@@ -119,10 +120,10 @@ public final class OpenposeDetector {
             ((DebugCallback) cb).debugCropImage(bitmap);
         }
         if(scheduler == null){
-            List<Classifier.Recognition> list = detector.estimateSinglePose(bitmap);
+            List<Recognition> list = detector.inference(bitmap);
             List<Human> humans = null;
             if (list.size() > 0) {
-                Classifier.Recognition reg = list.get(0);
+                Recognition reg = list.get(0);
                 if (reg.humans.size() > 0) {
                     humans = reg.humans;
                 }
@@ -134,10 +135,10 @@ public final class OpenposeDetector {
             Disposable task = scheduler.newWorker().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    List<Classifier.Recognition> list = detector.estimateSinglePose(bitmap);
+                    List<Recognition> list = detector.inference(bitmap);
                     List<Human> humans = null;
                     if (list.size() > 0) {
-                        Classifier.Recognition reg = list.get(0);
+                        Recognition reg = list.get(0);
                         if (reg.humans.size() > 0) {
                             humans = reg.humans;
                         }
@@ -175,7 +176,7 @@ public final class OpenposeDetector {
         }
     }
     public void onDestroy(){
-        detector.close();
+        detector.destroy();
     }
     private class AssetPathDecoder implements ImageParser.IDecoder{
         @Override

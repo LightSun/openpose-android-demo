@@ -63,6 +63,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.heaven7.android.lib_openpose.R;
+import com.heaven7.android.openpose.api.Common;
 import com.heaven7.openpose.openpose.env.Logger;
 //import com.heaven7.openpose.openpose.R; // Explicit import needed for internal Google builds.
 

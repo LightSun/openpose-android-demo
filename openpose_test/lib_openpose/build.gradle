@@ -2,6 +2,8 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
 
+def use_Npu = true;
+
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.2"
@@ -24,7 +26,11 @@ android {
         }
         ndk {
             // stl "gnustl_shared"
-            abiFilters "armeabi-v7a","arm64-v8a" /*,"x86"*/
+            if(use_Npu){
+                abiFilters "armeabi-v7a"
+            }else {
+                abiFilters "armeabi-v7a","arm64-v8a" /*,"x86"*/
+            }
         }
     }
 
@@ -59,7 +65,9 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+   // implementation fileTree(dir: 'libs', include: ['*.jar'])
+    api fileTree(dir: 'libs', include: ['*.aar'])
+
 
     implementation 'androidx.appcompat:appcompat:1.2.0'
 

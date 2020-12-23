@@ -1,6 +1,6 @@
 package com.heaven7.android.openpose_test;
 
-import com.heaven7.openpose.openpose.Common;
+import com.heaven7.android.openpose.api.Common;
 
 import java.util.ArrayList;
 import java.util.Arrays;
