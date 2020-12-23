@@ -25,9 +25,14 @@ public class NpuOpenpose implements OpenposeApi {
     private long mNNApi;
 
     static {
-        System.loadLibrary("openpose_npu");
-        System.loadLibrary("jpeg");
-        System.loadLibrary("ovxlib");
+        loadLib("jpeg");
+        loadLib("ovxlib");
+        loadLib("openpose_npu");
+    }
+
+    private static void loadLib(String name){
+        System.out.println("start load: " + name);
+        System.loadLibrary(name);
     }
 
     @Override
