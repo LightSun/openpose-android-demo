@@ -17,6 +17,7 @@ import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
 import com.heaven7.android.openpose.api.Common;
+import com.heaven7.android.openpose.api.OpenposeApi;
 import com.heaven7.android.openpose.api.bean.Coord;
 import com.heaven7.android.openpose.api.bean.Human;
 import com.heaven7.java.base.util.Predicates;
@@ -24,6 +25,7 @@ import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.java.visitor.MapFireVisitor;
 import com.heaven7.java.visitor.collection.KeyValuePair;
 import com.heaven7.java.visitor.collection.VisitServices;
+import com.heaven7.openpose.openpose.JavaPosenet;
 import com.heaven7.openpose.openpose.OpenposeCameraManager;
 import com.heaven7.openpose.openpose.OpenposeDetector;
 import com.heaven7.openpose.openpose.OverlayView;
@@ -63,6 +65,8 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
 
     private OpenposeDetector mDetector;
     private OpenposeCameraManager mOCM;
+    private OpenposeApi mApi;
+
     private float[][] mPose1;
     private boolean mTestDiff;
     private Bitmap mCopyCropBitmap;
@@ -77,9 +81,11 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        mApi = OpenposeApiFactory.newApi(this);
         overlap_debug.addCallback(debugCB);
 
         mOCM = new OpenposeCameraManager(this, R.id.container);
+        mOCM.setOpenposeApi(mApi);
         mOCM.setCallback(this);
         mOCM.setDebugCallback(debugCB);
         //mOCM.setDebug(true);
@@ -122,6 +128,11 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     protected void onDestroy() {
         if(mOCM != null){
             mOCM.onDestroy();
+            mOCM = null;
+        }
+        if(mDetector != null){
+            mDetector.onDestroy();
+            mDetector = null;
         }
         super.onDestroy();
     }
@@ -140,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     public void onClickDirectImage(View view) {
         mTestDiff = false;
         if(mDetector == null){
-            mDetector = new OpenposeDetector(this);
+            mDetector = new OpenposeDetector(this, mApi);
         }
         mVg_imgs.setVisibility(View.VISIBLE);
         mVg_camera.setVisibility(View.GONE);
@@ -152,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     public void onClickDirectImage2(View view) {
         mTestDiff = true;
         if(mDetector == null){
-            mDetector = new OpenposeDetector(this);
+            mDetector = new OpenposeDetector(this, mApi);
         }
         mVg_imgs.setVisibility(View.VISIBLE);
         mVg_camera.setVisibility(View.GONE);

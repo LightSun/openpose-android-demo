@@ -13,7 +13,9 @@ public class JavaPosenet implements OpenposeApi {
     private Posenet posenet;
 
     public JavaPosenet(Context context) {
-        initialize(context);
+        if(context != null){
+            initialize(context);
+        }
     }
 
     @Override
