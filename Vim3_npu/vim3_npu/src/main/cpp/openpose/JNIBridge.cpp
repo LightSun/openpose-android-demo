@@ -25,7 +25,7 @@ float *bitmapToRgbArray(JNIEnv *env, jobject jbitmap, float *out) {
     }*/
     //rgb . android is argb
     if(out == nullptr){
-        out = static_cast<float *>(malloc(bmpInfo.width * bmpInfo.height * 3));
+        out = static_cast<float *>(malloc(sizeof(float) * bmpInfo.width * bmpInfo.height * 3));
     }
     for (int i = 0, c = bmpInfo.width * bmpInfo.height; i < c; ++i) {
         out[i * 3] = data[i] << 16 & 0xff;

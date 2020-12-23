@@ -50,12 +50,13 @@ namespace Npu{
         msg = "vnn_VerifyGraph failed";
         status = vnn_VerifyGraph( graph );
         TEST_CHECK_STATUS(status, final);
-        LOGW("vnn_VerifyGraph success.");
+        LOGI("vnn_VerifyGraph success.");
 
         /* Process graph */
         msg = "vnn_ProcessGraph(run) failed";
         status = vnn_ProcessGraph( graph );
         TEST_CHECK_STATUS( status, final );
+        LOGI("vnn_ProcessGraph success.");
 
        /* if(VNN_APP_DEBUG)
         {
@@ -67,6 +68,7 @@ namespace Npu{
         msg = "vnn_PostProcess failed";
         status = vnn_PostProcess(graph, bmpInfo.width, bmpInfo.height, out);
         TEST_CHECK_STATUS(status, final);
+        LOGI("vnn_PostProcess success.");
         return true;
 
         final:

@@ -12,7 +12,7 @@ public interface OpenposeApi {
     //often called async
     void prepare(Context context);
 
-    void initialize();
+    void initialize(Context context);
     void destroy();
     List<Recognition> inference(Bitmap bitmap);
 }

@@ -35,7 +35,7 @@ public class NpuOpenpose implements OpenposeApi {
         AssetsUtils.copy(context, NB_NAME, SAVE_DIR + "/" + NB_NAME, true);
     }
     @Override
-    public void initialize() {
+    public void initialize(Context context) {
         mNNApi = nInit(SAVE_DIR + "/" + NB_NAME, 257 , 257);
     }
     @Override

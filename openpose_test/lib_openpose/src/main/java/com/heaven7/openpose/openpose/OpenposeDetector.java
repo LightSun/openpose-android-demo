@@ -26,6 +26,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_INPUT_SIZE;
 
+/**
+ * used to save stand data.
+ */
 public final class OpenposeDetector {
 
     private static final int RATIO = 2;
@@ -82,7 +85,6 @@ public final class OpenposeDetector {
         }
     }
     public int recognizeImage(Scheduler scheduler, String filePath, Object key, final Callback cb) {
-        //首次缩放之后先补齐. 然后再缩放和裁剪
         ImageParser parser = new ImageParser(MP_INPUT_SIZE * RATIO, MP_INPUT_SIZE * RATIO,
                 Bitmap.Config.ARGB_8888, false);
         parser.setCallback(new SimpleResizeCallback());
@@ -103,11 +105,9 @@ public final class OpenposeDetector {
         if(cb instanceof DebugCallback){
             ((DebugCallback) cb).debugParserImage(bitmap);
         }
-        //对齐宽高. 保证人一定能被完整的保存下来
         int wh = Math.max(bitmap.getWidth(), bitmap.getHeight());
         Bitmap croppedBitmap = ImageUtils.alignWidthHeight(bitmap, wh, wh, MP_INPUT_SIZE, MP_INPUT_SIZE);
         info.scale2 = wh * 1f / MP_INPUT_SIZE;
-        //为了渲染出最后不正确的动作。需要将最后识别出的动作对齐到原图。
         info.compensateWidth = wh - bitmap.getWidth();
         info.compensateHeight = wh - bitmap.getHeight();
         info.finalWidth = MP_INPUT_SIZE;
