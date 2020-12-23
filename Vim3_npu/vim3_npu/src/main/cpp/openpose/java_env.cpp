@@ -15,11 +15,11 @@ JavaVM *g_jvm;
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     JNIEnv *env;
-    if (vm->GetEnv((void **) (&env), JNI_VERSION_1_4) != JNI_OK) {
+    if (vm->GetEnv((void **) (&env), JNI_VERSION_1_6) != JNI_OK) {
         return JNI_ERR;
     }
     g_jvm = vm;
-    return JNI_VERSION_1_4;
+    return JNI_VERSION_1_6;
 }
 
 JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *reserved) {
@@ -29,7 +29,7 @@ JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *reserved) {
 
 JNIEnv *getJNIEnv() {
     JNIEnv *env = NULL;
-    if (g_jvm->GetEnv((void **) &env, JNI_VERSION_1_4) != JNI_OK) {
+    if (g_jvm->GetEnv((void **) &env, JNI_VERSION_1_6) != JNI_OK) {
         LOGD("getJNIEnv failed ! ------");
         return NULL;
     }
@@ -51,7 +51,7 @@ jclass getGlobalClass(JNIEnv * env, const char* classname){
 JNIEnv *attachJNIEnv() {
     JNIEnv *env = NULL;
     JavaVMAttachArgs args;
-    args.version = JNI_VERSION_1_4; // choose your JNI version
+    args.version = JNI_VERSION_1_6; // choose your JNI version
     args.name = "N_attachJNIEnv";   // you might want to give the java thread a name
     args.group = NULL;
     if (g_jvm->AttachCurrentThreadAsDaemon(&env, &args) != JNI_OK) {
