@@ -197,9 +197,8 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         // Configure the detector
        // detector = new Posenet(mActivity, "posenet_model.tflite", Device.CPU);
         if(detector == null){
-            detector = new JavaPosenet();
+            detector = new JavaPosenet(mActivity);
         }
-        detector.initialize(mActivity);
 
         previewWidth = size.getWidth();
         previewHeight = size.getHeight();
