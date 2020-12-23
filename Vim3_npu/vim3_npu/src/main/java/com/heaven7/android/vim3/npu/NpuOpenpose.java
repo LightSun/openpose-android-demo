@@ -26,6 +26,12 @@ public class NpuOpenpose implements OpenposeApi {
 
     static {
         loadLib("jpeg");
+        loadLib("cutils");
+        loadLib("GAL");
+        loadLib("NNArchPerf");
+        loadLib("archmodelSw");
+        loadLib("OpenVX");
+        loadLib("VSC");
         loadLib("ovxlib");
         loadLib("openpose_npu");
     }
