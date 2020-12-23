@@ -15,6 +15,7 @@
 
 #include "vnn_global.h"
 #include "vnn_post_process.h"
+#include "and_log.h"
 
 #define _BASETSD_H
 

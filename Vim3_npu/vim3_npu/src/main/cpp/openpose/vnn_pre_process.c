@@ -15,6 +15,7 @@
 #include "vsi_nn_pub.h"
 #include "vnn_global.h"
 #include "vnn_pre_process.h"
+#include "and_log.h"
 
 #define _BASETSD_H
 
@@ -561,8 +562,8 @@ static uint8_t *_get_tensor_data
     TEST_CHECK_PTR(tensorFile, error);
 
     sz = vsi_nn_GetElementNum(tensor);
-    stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type);
-    tensorData = (uint8_t *)malloc(stride * sz * sizeof(uint8_t));
+    stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type); //4
+    tensorData = (uint8_t *)malloc(stride * sz * sizeof(uint8_t)); //sz = 257 * 257 * 3
     TEST_CHECK_PTR(tensorData, error);
     memset(tensorData, 0, stride * sz * sizeof(uint8_t));
 

@@ -14,6 +14,7 @@
 
 #include "vnn_global.h"
 #include "vnn_mobilenetv1tfite.h"
+#include "and_log.h"
 
 /*-------------------------------------------
                    Macros
