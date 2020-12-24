@@ -10,12 +10,9 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
+        multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        ndk {
-            //stl "gnustl_shared"
-            abiFilters "armeabi-v7a"
-        }
     }
 
     buildTypes {
@@ -64,4 +61,5 @@ dependencies {
     implementation 'com.heaven7.java.visitor:Visitor:1.3.7'
     implementation 'com.github.LightSun:Produce-consume:1.0.2'
     implementation project(path: ':openpose_api')
+    implementation project(path: ':ncross_namespace')
 }

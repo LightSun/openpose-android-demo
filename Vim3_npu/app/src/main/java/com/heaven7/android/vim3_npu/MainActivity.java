@@ -1,13 +1,13 @@
 package com.heaven7.android.vim3_npu;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.Manifest;
+import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.os.Bundle;
 import android.view.View;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.heaven7.android.openpose.api.OpenposeApi;
 import com.heaven7.android.openpose.api.bean.Coord;
@@ -20,7 +20,6 @@ import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.openpose.openpose.OpenposeDetector;
 import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
 
-import java.sql.SQLOutput;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             public void onRequestPermissionResult(String s, int i, boolean b) {
                 System.out.println("permission result: " + b);
                 if(b){
-                    prepareAsync();
+                   // prepareAsync();
                 }
             }
             @Override
@@ -55,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         mHelper.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
+    //TODO only used to test npu.
     private void prepareAsync(){
         mApi = OpenposeApiFactory.newApi(this);
         Schedulers.io().newWorker().schedule(new Runnable() {
@@ -96,9 +96,17 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mDetector.recognizeImageFromAssets(Schedulers.io(), path, this);
     }
 
+    public void onTestCrossnameSpace(View view) {
+        Intent intent = new Intent(this, com.beichen.fakelinker.MainActivity.class);
+        startActivity(intent);
+    }
+
     @Override
     protected void onDestroy() {
-        mDetector.onDestroy();
+        if(mDetector != null){
+            mDetector.onDestroy();
+            mDetector = null;
+        }
         super.onDestroy();
     }
 
