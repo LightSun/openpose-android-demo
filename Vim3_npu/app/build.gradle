@@ -47,6 +47,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    api fileTree(dir: 'libs', include: ['*.aar'])
 
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
@@ -58,4 +59,5 @@ dependencies {
     implementation 'com.heaven7.java.base:Java-base:1.2.0'
     implementation 'com.heaven7.java.visitor:Visitor:1.3.7'
     implementation 'com.github.LightSun:Produce-consume:1.0.2'
+    implementation project(path: ':openpose_api')
 }

@@ -33,7 +33,7 @@ namespace Npu{
         graph = vnn_CreateNeuralNetwork(nbPath);
     }
     bool NNHApi::inference(jobject bitmap, Npu::OpenposeOut& out) {
-        AndroidBitmapInfo bmpInfo = {0};
+        AndroidBitmapInfo bmpInfo;
         if (AndroidBitmap_getInfo(ensureJNIEnv(), bitmap, &bmpInfo) < 0) {
             return false;
         }
@@ -129,6 +129,7 @@ static vsi_nn_graph_t *vnn_CreateNeuralNetwork
     printf("Create Neural Network: %ldms or %ldus\n", msVal, usVal);
 
     final:
+    printf("create graph failed");
     return graph;
 }
 

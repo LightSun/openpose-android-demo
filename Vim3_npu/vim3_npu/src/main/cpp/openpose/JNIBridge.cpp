@@ -9,7 +9,7 @@
 
 float *bitmapToRgbArray(JNIEnv *env, jobject jbitmap, float *out) {
 
-    AndroidBitmapInfo bmpInfo = {0};
+    AndroidBitmapInfo bmpInfo;
     if (AndroidBitmap_getInfo(env, jbitmap, &bmpInfo) < 0) {
         return nullptr;
     }

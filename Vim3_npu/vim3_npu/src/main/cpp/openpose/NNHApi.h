@@ -7,6 +7,10 @@
 
 #include "jni.h"
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +28,11 @@
 #include "vnn_pre_process.h"
 #include "vnn_post_process.h"
 #include "vnn_mobilenetv1tfite.h"
+
+#ifdef __cplusplus
+}
+#endif
+
 #include "OpenposeOut.h"
 
 namespace Npu{
