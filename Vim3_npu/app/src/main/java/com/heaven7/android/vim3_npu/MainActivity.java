@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     private final PermissionHelper mHelper = new PermissionHelper(this);
     private OpenposeDetector mDetector;
 
-    private OpenposeApi mApi = OpenposeApiFactory.newApi(this);
+    private OpenposeApi mApi;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mHelper.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
     private void prepareAsync(){
+        mApi = OpenposeApiFactory.newApi(this);
         Schedulers.io().newWorker().schedule(new Runnable() {
             @Override
             public void run() {

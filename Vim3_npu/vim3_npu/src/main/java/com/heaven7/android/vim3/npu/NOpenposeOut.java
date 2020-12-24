@@ -1,14 +1,21 @@
 package com.heaven7.android.vim3.npu;
 
+import androidx.annotation.Keep;
+
 /**
  * native openpose output
  */
+@Keep
 public final class NOpenposeOut {
 
     private long ptr;
 
+    /*static {
+        NpuOpenpose.loadLibs();
+    }*/
+
     public NOpenposeOut() {
-        this.ptr = nAlloc();
+        this.ptr = nCreate();
     }
     public long getPtr(){
         return ptr;
@@ -25,7 +32,7 @@ public final class NOpenposeOut {
         super.finalize();
     }
 
-    private static native long nAlloc();
+    private static native long nCreate();
     private static native void nFree(long ptr);
     private static native int nGetOutSize(long ptr);
     private static native float nGetOutX(long ptr, int index);

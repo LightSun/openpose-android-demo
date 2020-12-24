@@ -4,6 +4,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Environment;
 
+import androidx.annotation.Keep;
+
+import com.getkeepsafe.relinker.ReLinker;
 import com.heaven7.android.openpose.api.Common;
 import com.heaven7.android.openpose.api.OpenposeApi;
 import com.heaven7.android.openpose.api.bean.Coord;
@@ -17,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 //TODO test
+@Keep
 public class NpuOpenpose implements OpenposeApi {
 
     private static final String TAG = "NpuOpenpose";
@@ -27,6 +31,10 @@ public class NpuOpenpose implements OpenposeApi {
     private long mNNApi;
 
     static {
+        NpuOpenpose.loadLibs();
+    }
+
+    public static void loadLibs(){
         loadLib("jpeg");
         loadLib("cutils");
         loadLib("GAL");
@@ -41,6 +49,17 @@ public class NpuOpenpose implements OpenposeApi {
     private static void loadLib(String name){
         System.out.println("start load: " + name);
         System.loadLibrary(name);
+        System.out.println("end load: " + name);
+       /* ReLinker.loadLibrary(ContextHelper.getAppContext(), name, new ReLinker.LoadListener() {
+            @Override
+            public void success() {
+                System.out.println("end load: " + name);
+            }
+            @Override
+            public void failure(Throwable t) {
+               t.printStackTrace();
+            }
+        });*/
     }
 
     @Override
