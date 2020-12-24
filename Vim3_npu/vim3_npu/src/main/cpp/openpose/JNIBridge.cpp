@@ -27,10 +27,12 @@ float *bitmapToRgbArray(JNIEnv *env, jobject jbitmap, float *out) {
     if(out == nullptr){
         out = static_cast<float *>(malloc(sizeof(float) * bmpInfo.width * bmpInfo.height * 3));
     }
+    float mean = 128.0f;
+    float std = 128.0f;
     for (int i = 0, c = bmpInfo.width * bmpInfo.height; i < c; ++i) {
-        out[i * 3] = data[i] << 16 & 0xff;
-        out[i * 3 + 1] = data[i] << 8 & 0xff;
-        out[i * 3 + 2] = data[i] & 0xff;
+        out[i * 3] =   ((data[i] << 16 & 0xff) - mean) / std;
+        out[i * 3 + 1] = ((data[i] << 8 & 0xff) - mean ) / std;
+        out[i * 3 + 2] = ((data[i] & 0xff ) - mean) / std;
     }
     AndroidBitmap_unlockPixels(env, jbitmap);
     return out;
