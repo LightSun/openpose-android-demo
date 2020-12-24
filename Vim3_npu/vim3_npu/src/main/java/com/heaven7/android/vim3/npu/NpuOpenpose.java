@@ -2,6 +2,7 @@ package com.heaven7.android.vim3.npu;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Environment;
 
 import com.heaven7.android.openpose.api.Common;
 import com.heaven7.android.openpose.api.OpenposeApi;
@@ -19,8 +20,9 @@ import java.util.Map;
 public class NpuOpenpose implements OpenposeApi {
 
     private static final String TAG = "NpuOpenpose";
-    private static final String SAVE_DIR = "heaven7/vim3_npu";
+    private static final String SAVE_DIR = Environment.getExternalStorageDirectory() + "/heaven7/vim3_npu";
     private static final String NB_NAME = "network_binary.nb";
+
     private final NOpenposeOut mOut = new NOpenposeOut();
     private long mNNApi;
 

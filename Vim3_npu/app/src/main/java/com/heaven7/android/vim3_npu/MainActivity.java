@@ -13,6 +13,7 @@ import com.heaven7.android.openpose.api.OpenposeApi;
 import com.heaven7.android.openpose.api.bean.Coord;
 import com.heaven7.android.openpose.api.bean.Human;
 import com.heaven7.android.vim3.npu.NpuOpenpose;
+import com.heaven7.core.util.MainWorker;
 import com.heaven7.core.util.PermissionHelper;
 import com.heaven7.java.base.util.Predicates;
 import com.heaven7.java.pc.schedulers.Schedulers;
@@ -63,8 +64,19 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                     @Override
                     public void run() {
                         mApi.initialize(getApplicationContext());
+                        System.out.println("nnpai create success.");
+                        testNpuImage();
                     }
                 });
+            }
+        });
+    }
+
+    private void testNpuImage() {
+        MainWorker.postDelay(3000, new Runnable() {
+            @Override
+            public void run() {
+                onTestNpuImage(null);
             }
         });
     }
@@ -97,14 +109,14 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
          * 2, diff 平均 大于 阈值 则指出哪些动作不正确.
          */
         if(!Predicates.isEmpty(list)){
-            System.out.println("get stand info ok.");
+            System.out.println("onRecognized: get stand info ok.");
             for (Human human : list){
                 for (Map.Entry<Integer, Coord> en :human.parts.entrySet()){
                     System.out.println(en.getKey() + ":  " + en.getValue());
                 }
             }
         }else {
-            System.err.println("no human");
+            System.err.println("onRecognized: no human");
         }
     }
 }

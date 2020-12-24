@@ -31,6 +31,7 @@ namespace Npu{
         strcpy(this->nbPath, nbPath);
         rgbBuffer = static_cast<float *>(malloc(sizeof(float)* w * h * 3));
         graph = vnn_CreateNeuralNetwork(nbPath);
+        LOGD("vnn_CreateNeuralNetwork graph = %p", graph);
     }
     bool NNHApi::inference(jobject bitmap, Npu::OpenposeOut& out) {
         AndroidBitmapInfo bmpInfo;
