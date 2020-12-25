@@ -10,9 +10,16 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
-        multiDexEnabled true
 
+       // multiDexEnabled true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    //分包2
+    dexOptions {
+        javaMaxHeapSize "4g"
+        preDexLibraries = false
+        additionalParameters = ['--multi-dex', '--main-dex-list='+ project.rootDir.absolutePath + '/app/maindexlist.txt', '--minimal-main-dex',
+                                '--set-max-idx-number=60000']
     }
 
     buildTypes {
@@ -21,12 +28,17 @@ android {
             jniDebuggable true
             debuggable true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            multiDexKeepProguard file('multiDexKeep.pro') // keep specific classes using proguard syntax
+            multiDexKeepFile file('maindexlist.txt') // keep specific classes
+
         }
         release{
             minifyEnabled false
             jniDebuggable true
             debuggable true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            multiDexKeepProguard file('multiDexKeep.pro') // keep specific classes using proguard syntax
+            multiDexKeepFile file('maindexlist.txt') // keep specific classes
         }
     }
     lintOptions {
@@ -62,4 +74,6 @@ dependencies {
     implementation 'com.github.LightSun:Produce-consume:1.0.2'
     implementation project(path: ':openpose_api')
     implementation project(path: ':ncross_namespace')
+
+    //implementation 'androidx.multidex:multidex:2.0.0'
 }

@@ -63,7 +63,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public static boolean releaseDexAndLoad(Context context) {
-        if (!releaseFile(context, "classes.dex", context.getDataDir().getAbsolutePath() + File.separator + "dyn.dex")) {
+        //DynTestClass is in classes5.dex
+        if (!releaseFile(context, "classes5.dex", context.getDataDir().getAbsolutePath() + File.separator + "dyn.dex")) {
             return false;
         }
         String[] abis = Build.SUPPORTED_32_BIT_ABIS;

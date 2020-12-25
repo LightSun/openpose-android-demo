@@ -1,0 +1,3 @@
+com/beichen/fakelinker/DynTestClass
+com/beichen/fakelinker/MainActivity
+com/beichen/fakelinker/MainActivity$1
