@@ -67,5 +67,6 @@ dependencies {
     implementation('com.github.LightSun:util-v1:2.0.1') {
         exclude module: 'android-component'
     }
-    implementation 'com.getkeepsafe.relinker:relinker:1.4.1'
+    //implementation 'com.getkeepsafe.relinker:relinker:1.4.1'
+    implementation 'org.tensorflow:tensorflow-lite:2.2.0'
 }

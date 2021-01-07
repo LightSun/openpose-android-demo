@@ -21,52 +21,34 @@
 *    DEALINGS IN THE SOFTWARE.
 *
 *****************************************************************************/
-#ifndef _VSI_NN_OP_REDUCEALL_INTERNAL_H
-#define _VSI_NN_OP_REDUCEALL_INTERNAL_H
+
+#ifndef _VSI_NN_OP_BATCHNORM_SINGLE_H
+#define _VSI_NN_OP_BATCHNORM_SINGLE_H
 
 #include "vsi_nn_types.h"
 
-#define VSI_NN_REDUCEALL_SH_KERNEL_IDX(_AXIS, _INPUT_TYPE, _OUTPUT_TYPE, _IMAGE_DIMS) \
-    VSI_NN_REDUCEALL_AXIS##_AXIS##_##_INPUT_TYPE##TO##_OUTPUT_TYPE##_##_IMAGE_DIMS##_KERNEL,
+/* enum for inputs/outputs */
+enum
+{
+    BATCHNORM_INPUT             = 0,
+    BATCHNORM_INPUT_MEAN        = 1,
 
-enum {
-    REDUCEALL_CPU_KERNEL,
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(0, I8,  I8, IMAGE)
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(0, I8,  I8, IMAGE_2D)
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(1, I8,  I8, IMAGE)
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(1, I8,  I8, IMAGE_2D)
-    VSI_NN_REDUCEALL_SH_KERNEL_IDX(2, I8,  I8, IMAGE)
-    REDUCEALL_KERNEL_COUNTS,
+    BATCHNORM_INPUT_VARIANCE    = 2,
+    BATCHNORM_INPUT_GAMMA       = 3,
+    BATCHNORM_INPUT_BETA        = 4,
+
+    BATCHNORM_INPUT_CNT,
+
+    BATCHNORM_OUTPUT            = 0,
+
+    BATCHNORM_OUTPUT_CNT
 };
 
-enum {
-    REDUCEALL_INPUT = 0,
-
-    REDUCEALL_INPUTS_COUNT,
-
-    REDUCEALL_OUTPUT = 0,
-
-    REDUCEALL_OUTPUTS_COUNT,
-
-    REDUCEALL_PARAM_COUT = REDUCEALL_INPUTS_COUNT + REDUCEALL_OUTPUTS_COUNT,
-};
-
-#define _VSI_NN_REDUCEALL_LOCAL_TENSOR_NUM 2
-
-typedef struct _vsi_nn_reduceall_lcl_data
+typedef struct _vsi_nn_batchnorm_single_param
 {
-    vx_tensor   local_tensor[_VSI_NN_REDUCEALL_LOCAL_TENSOR_NUM];
-    uint32_t    hash_idx;
-    vsi_bool    execute_on_sw;
-} vsi_nn_reduceall_lcl_data;
-
-typedef struct _vsi_nn_reduceall_internal_param
-{
-    vsi_nn_reduceall_lcl_data  local;
-    vx_int32    *axis;
-    vx_uint32   axis_num;
-    vx_bool     keep_dim;
-} vsi_nn_reduceall_internal_param;
+    // Add parameters here
+    float eps;
+} vsi_nn_batchnorm_single_param;
 
 #endif
 

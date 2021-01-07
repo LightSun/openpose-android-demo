@@ -2,6 +2,12 @@ package com.heaven7.android.vim3.npu;
 
 import androidx.annotation.Keep;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * native openpose output
  */
@@ -9,6 +15,8 @@ import androidx.annotation.Keep;
 public final class NOpenposeOut {
 
     private long ptr;
+    //1*9*9*17
+    //private final List<List<List<FloatBuffer>>> buffers = new ArrayList<>();
 
     /*static {
         NpuOpenpose.loadLibs();
@@ -25,6 +33,11 @@ public final class NOpenposeOut {
             nFree(ptr);
             ptr = 0;
         }
+    }
+    public static FloatBuffer createNativeFloatBuffer(int size) {
+        ByteBuffer bb = ByteBuffer.allocateDirect(size * 4);
+        bb.order(ByteOrder.nativeOrder());
+        return bb.asFloatBuffer();
     }
     @Override
     protected void finalize() throws Throwable {

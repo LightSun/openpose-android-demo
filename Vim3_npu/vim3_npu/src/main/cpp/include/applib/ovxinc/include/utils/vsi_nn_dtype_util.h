@@ -29,7 +29,6 @@
 #include "vsi_nn_types.h"
 #include "vsi_nn_log.h"
 #include "vsi_nn_math.h"
-#include "vsi_nn_pub.h"
 
 #ifdef __cplusplus
 extern "C" {

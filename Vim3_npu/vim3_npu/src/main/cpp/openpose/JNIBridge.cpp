@@ -17,7 +17,8 @@ float *bitmapToRgbArray(JNIEnv *env, jobject jbitmap, float *out) {
     if(AndroidBitmap_lockPixels(env, jbitmap,(void**)&data)){
         return nullptr;
     }
-  /*  jfloat *pData = (jfloat *) env->GetDirectBufferAddress(buffer);
+    LOGD("bitmap (w, h = %d, %d)", bmpInfo.width, bmpInfo.height);
+    /*  jfloat *pData = (jfloat *) env->GetDirectBufferAddress(buffer);
     jlong dwCapacity = env->GetDirectBufferCapacity(buffer);
     if (!pData) {
         LOGE("GetDirectBufferAddress() return null");

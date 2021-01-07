@@ -3,7 +3,7 @@ project(TENSORFLOW_DEMO)
 cmake_minimum_required(VERSION 3.4.1)
 
 # openpose
-set(LIB_DIR ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${ANDROID_ABI})
+set(LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 include_directories(src/main/cpp/include/applib/ovxinc/include)
 include_directories(src/main/cpp/include/service/ovx_inc)
 aux_source_directory(src/main/cpp/openpose src_openpose)
@@ -40,15 +40,6 @@ find_library( # Sets the name of the path variable.
         # you want CMake to locate.
         log)
 
-target_link_libraries(openpose_npu
-     jpeg_t
-     cutils
-     GAL
-     NNArchPerf
-     archmodelSw
-     OpenVX
-     VSC
-     ovxlib
-     jnigraphics
-     ${log-lib}
-)
+target_link_libraries(openpose_npu PRIVATE jnigraphics ${log-lib})
+target_link_libraries(openpose_npu PRIVATE ovxlib)
+target_link_libraries(openpose_npu PRIVATE jpeg_t)

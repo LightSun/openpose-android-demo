@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             public void onRequestPermissionResult(String s, int i, boolean b) {
                 System.out.println("permission result: " + b);
                 if(b){
-                   // prepareAsync();
+                    prepareAsync();
                 }
             }
             @Override
@@ -97,8 +97,8 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     }
 
     public void onTestCrossnameSpace(View view) {
-        Intent intent = new Intent(this, com.beichen.fakelinker.MainActivity.class);
-        startActivity(intent);
+       // Intent intent = new Intent(this, com.beichen.fakelinker.MainActivity.class);
+       // startActivity(intent);
     }
 
     @Override

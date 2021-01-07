@@ -170,15 +170,11 @@ static uint8_t *_get_tensor_data(vsi_nn_tensor_t *tensor, jobject jbitmap, float
 
     vsi_status status = VSI_FAILURE;
     uint32_t sz = vsi_nn_GetElementNum(tensor);
-    if(sz != sizeof(rgbBuffer) / sizeof(rgbBuffer[0])){
-        LOGW("_get_tensor_data failed. expect sz_size = %d, but is %d", sz, sizeof(rgbBuffer) / sizeof(rgbBuffer[0]));
-        return NULL;
-    }
+    LOGD("_get_tensor_data. expect sz_size = %d, but is %d", sz, sizeof(rgbBuffer) / sizeof(rgbBuffer[0]));
+
     uint32_t stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type);
-    if(stride != 3){
-        LOGW("stride not expect, stride = %d", stride);
-        return NULL;
-    }
+    LOGD("input stride = %d", stride);
+
     uint8_t * tensorData = (uint8_t *)malloc(stride * sz * sizeof(uint8_t));
     TEST_CHECK_PTR(tensorData, error);
     memset(tensorData, 0, stride * sz * sizeof(uint8_t));
@@ -290,6 +286,7 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
 
     h7::Array<Npu::ChunkF*> outputs;
 
+    LOGD("graph->output.num = %d", graph->output.num);
     for(uint32_t i = 0; i < graph->output.num; i++){
         tensor = vsi_nn_GetTensor(graph, graph->output.tensors[i]);
         //compute sz
@@ -303,6 +300,7 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
         tensor_data = (uint8_t *)vsi_nn_ConvertTensorToData(graph, tensor);
 
         auto pF = new Npu::ChunkF(sz);
+        pF->setShape(reinterpret_cast<int *>(tensor->attr.size), tensor->attr.dim_num);
         outputs.add(pF);
         //buffer = (float *)malloc(sizeof(float) * sz);
 
@@ -312,18 +310,17 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
             status = vsi_nn_DtypeToFloat32(&tensor_data[stride * j], pF->getPointer(j), &tensor->attr.dtype);
         }
         vsi_nn_Free(tensor_data);
-        auto groupResult = pF->groupRaw(reinterpret_cast<int *>(tensor->attr.size),
-                                        tensor->attr.dim_num);
-        LOGD("tensor idx = %d ,groupResult = %s", i, (groupResult ? "true" : "false"));
+        //auto groupResult = pF->groupRaw(reinterpret_cast<int *>(tensor->attr.size),tensor->attr.dim_num);
+        LOGD("output tensor idx = %d", i);
        // free(buffer);
     }
 
-    auto heatmaps = outputs.get(0)->getChild(0);
-    auto offsets = outputs.get(1)->getChild(0);
+    auto heatmaps = outputs.get(0);
+    auto offsets = outputs.get(1);
 
-    int height = heatmaps->get(0)->size();
-    int width = heatmaps->get(0)->get(0)->size();
-    int numKeypoints = heatmaps->get(0)->get(0)->get(0)->size();
+    int height = heatmaps->getShape(1);
+    int width = heatmaps->getShape(2);
+    int numKeypoints = heatmaps->getShape(3);
     LOGD("width = %d, height = %d, numKeypoints = %d", width, height, numKeypoints);
 
     // Finds the (row, col) locations of where the keypoints are most likely to be.
@@ -339,14 +336,17 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
     int maxRow;
     int maxCol;
     for (int keypoint = 0; keypoint < numKeypoints; ++keypoint) {
-        maxVal = heatmaps->get(0)->get(0)->get(0)->get(keypoint);
+        //maxVal = heatmaps->get(0)->get(0)->get(0)->get(keypoint);
+        maxVal = heatmaps->getValue(0, 0, keypoint);
         maxRow = 0;
         maxCol = 0;
         for (int row = 0; row < height; ++row) { //row
-            auto pArray = heatmaps->get(0)->get(row);
+           // auto pArray = heatmaps->get(0)->get(row);
             for (int col = 0; col < width; ++col) { //col
-                if(pArray->get(col)->get(keypoint) > maxVal){
-                    maxVal = heatmaps->get(0)->get(row)->get(col)->get(keypoint);
+               // if(pArray->get(col)->get(keypoint) > maxVal){
+                if(heatmaps->getValue(row, col, keypoint) > maxVal){
+                    //maxVal = heatmaps->get(0)->get(row)->get(col)->get(keypoint);
+                    maxVal = heatmaps->getValue(row, col, keypoint);
                     maxRow = row;
                     maxCol = col;
                 }
@@ -381,10 +381,13 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
         positionY = position->first;
         positionX = position->second;
         x = position->first *1.0f/ (height - 1) +
-            offsets->get(0)->get(positionY)->get(positionX)->get(idx) / bitmapH;
+           // offsets->get(0)->get(positionY)->get(positionX)->get(idx) / bitmapH;
+            offsets->getValue(positionY, positionX, idx) / bitmapH;
         y = position->second * 1.0f/ (width - 1) +
-            offsets->get(0)->get(positionY)->get(positionX)->get(idx + numKeypoints) / bitmapW;
-        score = sigmoid(heatmaps->get(0)->get(positionY)->get(positionX)->get(idx));
+           // offsets->get(0)->get(positionY)->get(positionX)->get(idx + numKeypoints) / bitmapW;
+            offsets->getValue(positionY, positionX, idx + numKeypoints) / bitmapW;
+        //score = sigmoid(heatmaps->get(0)->get(positionY)->get(positionX)->get(idx));
+        score = sigmoid(heatmaps->getValue(positionY, positionX, idx));
 
         out.xCoords->add(x);
         out.yCoords->add(y);

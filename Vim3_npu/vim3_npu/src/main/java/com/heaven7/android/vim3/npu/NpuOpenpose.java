@@ -6,7 +6,6 @@ import android.os.Environment;
 
 import androidx.annotation.Keep;
 
-import com.getkeepsafe.relinker.ReLinker;
 import com.heaven7.android.openpose.api.Common;
 import com.heaven7.android.openpose.api.OpenposeApi;
 import com.heaven7.android.openpose.api.bean.Coord;
@@ -50,16 +49,6 @@ public class NpuOpenpose implements OpenposeApi {
         System.out.println("start load: " + name);
         System.loadLibrary(name);
         System.out.println("end load: " + name);
-       /* ReLinker.loadLibrary(ContextHelper.getAppContext(), name, new ReLinker.LoadListener() {
-            @Override
-            public void success() {
-                System.out.println("end load: " + name);
-            }
-            @Override
-            public void failure(Throwable t) {
-               t.printStackTrace();
-            }
-        });*/
     }
 
     @Override
@@ -81,11 +70,13 @@ public class NpuOpenpose implements OpenposeApi {
     }
     @Override
     public List<Recognition> inference(Bitmap bitmap) {
+        long start = System.currentTimeMillis();
         boolean result = nInference(mNNApi, mOut.getPtr(), bitmap);
         if(!result){
             Logger.e(TAG, "inference failed");
             return Collections.emptyList();
         }
+        System.out.println("inference cost time = " + (System.currentTimeMillis() - start));
         Human hu = new Human();
         Map<Integer, Coord> map = hu.parts;
         float totalScore = 0.0f;
