@@ -25,7 +25,6 @@ import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.java.visitor.MapFireVisitor;
 import com.heaven7.java.visitor.collection.KeyValuePair;
 import com.heaven7.java.visitor.collection.VisitServices;
-import com.heaven7.openpose.openpose.JavaPosenet;
 import com.heaven7.openpose.openpose.OpenposeCameraManager;
 import com.heaven7.openpose.openpose.OpenposeDetector;
 import com.heaven7.openpose.openpose.OverlayView;
