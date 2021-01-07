@@ -36,6 +36,7 @@ extern "C"{
 #include "OpenposeOut.h"
 
 namespace Npu{
+    class ChunkF;
     class NNHApi{
 
     public:
@@ -49,6 +50,9 @@ namespace Npu{
         vsi_nn_graph_t * graph;
         float* rgbBuffer;
         char* nbPath;
+        //cache objects
+        h7::Array<Npu::ChunkF*> _outputArray;
+        uint8_t * _tensorData;
     };
 }
 

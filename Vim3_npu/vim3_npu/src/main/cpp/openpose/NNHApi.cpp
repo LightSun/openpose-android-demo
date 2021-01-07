@@ -11,17 +11,17 @@
 #include "Pair.h"
 
 static uint64_t get_perf_count();
-static uint8_t *_get_tensor_data(vsi_nn_tensor_t *tensor, jobject jbitmap, float *pDouble);
+static uint8_t *_get_tensor_data(vsi_nn_tensor_t *tensor, jobject jbitmap, float *rgbBuffer, uint8_t * tensorData);
 
 static vsi_nn_graph_t *vnn_CreateNeuralNetwork(const char *data_file_name);
-static vsi_status _handle_input_bitmap (vsi_nn_graph_t *graph,jobject jbitmap, float* rgbBuffer);
+static vsi_status _handle_input_bitmap (vsi_nn_graph_t *graph,jobject jbitmap, float* rgbBuffer,uint8_t* tensorData);
 
 static vsi_status vnn_VerifyGraph(vsi_nn_graph_t *graph);
 static vsi_status vnn_ProcessGraph(vsi_nn_graph_t *graph); //run graph
 static vsi_status vnn_PostProcessNeuralNetwork(vsi_nn_graph_t *graph);
 static void vnn_ReleaseNeuralNetwork (vsi_nn_graph_t *graph);
 
-static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmapH,Npu::OpenposeOut& out);
+static vsi_status vnn_PostProcess(h7::Array<Npu::ChunkF*>& outputs, vsi_nn_graph_t *graph, int bitmapW, int bitmapH,Npu::OpenposeOut& out);
 //---------------------------------------------------------------
 
 namespace Npu{
@@ -32,6 +32,16 @@ namespace Npu{
         rgbBuffer = static_cast<float *>(malloc(sizeof(float)* w * h * 3));
         graph = vnn_CreateNeuralNetwork(nbPath);
         LOGD("vnn_CreateNeuralNetwork graph = %p", graph);
+
+        //1,9,9,17  1,9,9,34
+        //cache
+        ChunkF* chunk = new ChunkF(9*9*17);
+        _outputArray.add(chunk);
+
+        chunk = new ChunkF(9*9*34);
+        _outputArray.add(chunk);
+        //sz = w * h * 3 //stride often is 2
+        _tensorData = (uint8_t *)malloc(2 * w * h * 3 * sizeof(uint8_t));
     }
     bool NNHApi::inference(jobject bitmap, Npu::OpenposeOut& out) {
         AndroidBitmapInfo bmpInfo;
@@ -39,11 +49,12 @@ namespace Npu{
             return false;
         }
         if(graph == nullptr){
-            graph = vnn_CreateNeuralNetwork(nbPath);
+            LOGW("no graph.");
+            return false;
         }
         /* Pre process the image data */
         vsi_status status;
-        if(_handle_input_bitmap(graph, bitmap, rgbBuffer) == VX_FAILURE){
+        if(_handle_input_bitmap(graph, bitmap, rgbBuffer, _tensorData) == VX_FAILURE){
             goto final;
         }
         const char* msg;
@@ -67,7 +78,7 @@ namespace Npu{
 
         /* Post process output data */
         msg = "vnn_PostProcess failed";
-        status = vnn_PostProcess(graph, bmpInfo.width, bmpInfo.height, out);
+        status = vnn_PostProcess(_outputArray, graph, bmpInfo.width, bmpInfo.height, out);
         TEST_CHECK_STATUS(status, final);
         LOGI("vnn_PostProcess success.");
         return true;
@@ -82,6 +93,12 @@ namespace Npu{
         if(nbPath){
             free(nbPath);
             nbPath = nullptr;
+        }
+        auto it = ChunkF::Iterator();
+        _outputArray.clear(&it);
+        if(_tensorData){
+            free(_tensorData);
+            _tensorData = nullptr;
         }
     }
     void NNHApi::releaseGraph() {
@@ -136,7 +153,7 @@ static vsi_nn_graph_t *vnn_CreateNeuralNetwork
 
 static vsi_status _handle_input_bitmap (
         vsi_nn_graph_t *graph,
-        jobject jbitmap, float* rgbBuffer){
+        jobject jbitmap, float* rgbBuffer, uint8_t * tensorData){
     vsi_status status;
     vsi_nn_tensor_t *tensor;
     uint8_t *data;
@@ -147,7 +164,7 @@ static vsi_status _handle_input_bitmap (
     tensor = NULL;
     tensor = vsi_nn_GetTensor(graph, graph->input.tensors[0] );
 
-    data = _get_tensor_data(tensor, jbitmap, rgbBuffer);
+    data = _get_tensor_data(tensor, jbitmap, rgbBuffer, tensorData);
     TEST_CHECK_PTR(data, final);
 
     /* Copy the Pre-processed data to input tensor */
@@ -160,22 +177,24 @@ static vsi_status _handle_input_bitmap (
     //vsi_nn_SaveTensorToBinary(graph, tensor, dumpInput);
 
     status = VSI_SUCCESS;
+    return status;
     final:
-    if(data)free(data);
+        //if(data)free(data);
+        LOGE("called _handle_input_bitmap(...) failed");
     return status;
 }
-static uint8_t *_get_tensor_data(vsi_nn_tensor_t *tensor, jobject jbitmap, float *rgbBuffer) {
+static uint8_t *_get_tensor_data(vsi_nn_tensor_t *tensor, jobject jbitmap, float *rgbBuffer, uint8_t * tensorData) {
     auto pEnv = ensureJNIEnv();
     bitmapToRgbArray(pEnv, jbitmap, rgbBuffer);
 
     vsi_status status = VSI_FAILURE;
     uint32_t sz = vsi_nn_GetElementNum(tensor);
-    LOGD("_get_tensor_data. expect sz_size = %d, but is %d", sz, sizeof(rgbBuffer) / sizeof(rgbBuffer[0]));
+    LOGD("_get_tensor_data. expect sz(element count) = %d", sz);
 
     uint32_t stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type);
     LOGD("input stride = %d", stride);
 
-    uint8_t * tensorData = (uint8_t *)malloc(stride * sz * sizeof(uint8_t));
+    //uint8_t * tensorData = (uint8_t *)malloc(stride * sz * sizeof(uint8_t));
     TEST_CHECK_PTR(tensorData, error);
     memset(tensorData, 0, stride * sz * sizeof(uint8_t));
 
@@ -186,7 +205,8 @@ static uint8_t *_get_tensor_data(vsi_nn_tensor_t *tensor, jobject jbitmap, float
     }
     return tensorData;
     error:
-    free(tensorData);
+   // free(tensorData);
+    LOGE("called _get_tensor_data(...) failed");
     return nullptr;
 }
 static vsi_status vnn_VerifyGraph
@@ -276,7 +296,7 @@ static void vnn_ReleaseNeuralNetwork
 static float sigmoid(float x){
     return (1.0f / (1.0f + exp(-x)));
 }
-static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmapH,Npu::OpenposeOut& out){
+static vsi_status vnn_PostProcess(h7::Array<Npu::ChunkF*>& outputs, vsi_nn_graph_t *graph, int bitmapW, int bitmapH,Npu::OpenposeOut& out){
 
     uint32_t sz,stride;
     vsi_nn_tensor_t *tensor;
@@ -284,10 +304,11 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
    // float *buffer = NULL;
     uint8_t *tensor_data = NULL;
 
-    h7::Array<Npu::ChunkF*> outputs;
-
     LOGD("graph->output.num = %d", graph->output.num);
-    for(uint32_t i = 0; i < graph->output.num; i++){
+    //here we only used two output tensor
+
+    const int tensorCount = graph->output.num > 2 ? 2 : graph->output.num;
+    for(uint32_t i = 0; i < tensorCount; i++){
         tensor = vsi_nn_GetTensor(graph, graph->output.tensors[i]);
         //compute sz
         sz = 1;
@@ -299,10 +320,8 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
         stride = vsi_nn_TypeGetBytes(tensor->attr.dtype.vx_type);
         tensor_data = (uint8_t *)vsi_nn_ConvertTensorToData(graph, tensor);
 
-        auto pF = new Npu::ChunkF(sz);
+        auto pF = outputs.get(i);
         pF->setShape(reinterpret_cast<int *>(tensor->attr.size), tensor->attr.dim_num);
-        outputs.add(pF);
-        //buffer = (float *)malloc(sizeof(float) * sz);
 
         for(uint32_t j = 0; j < sz; j++)
         {
@@ -310,9 +329,7 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
             status = vsi_nn_DtypeToFloat32(&tensor_data[stride * j], pF->getPointer(j), &tensor->attr.dtype);
         }
         vsi_nn_Free(tensor_data);
-        //auto groupResult = pF->groupRaw(reinterpret_cast<int *>(tensor->attr.size),tensor->attr.dim_num);
         LOGD("output tensor idx = %d", i);
-       // free(buffer);
     }
 
     auto heatmaps = outputs.get(0);
@@ -331,6 +348,22 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
         f = new Npu::Pair();
         keypointPositions.add(f);
     }
+   /* val keypointPositions = Array(numKeypoints) { Pair(0, 0) }
+    for (keypoint in 0 until numKeypoints) {
+        var maxVal = heatmaps[0][0][0][keypoint]
+        var maxRow = 0
+        var maxCol = 0
+        for (row in 0 until height) {
+            for (col in 0 until width) {
+                if (heatmaps[0][row][col][keypoint] > maxVal) {
+                    maxVal = heatmaps[0][row][col][keypoint]
+                    maxRow = row
+                    maxCol = col
+                }
+            }
+        }
+        keypointPositions[keypoint] = Pair(maxRow, maxCol)
+    }*/
     // handle keypointPositions
     float maxVal;
     int maxRow;
@@ -380,10 +413,10 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
         auto position = keypointPositions.get(idx);
         positionY = position->first;
         positionX = position->second;
-        x = position->first *1.0f/ (height - 1) +
+        y = position->first *1.0f/ (height - 1) +
            // offsets->get(0)->get(positionY)->get(positionX)->get(idx) / bitmapH;
             offsets->getValue(positionY, positionX, idx) / bitmapH;
-        y = position->second * 1.0f/ (width - 1) +
+        x = position->second * 1.0f/ (width - 1) +
            // offsets->get(0)->get(positionY)->get(positionX)->get(idx + numKeypoints) / bitmapW;
             offsets->getValue(positionY, positionX, idx + numKeypoints) / bitmapW;
         //score = sigmoid(heatmaps->get(0)->get(positionY)->get(positionX)->get(idx));
@@ -409,8 +442,5 @@ static vsi_status vnn_PostProcess(vsi_nn_graph_t *graph, int bitmapW, int bitmap
         )
         confidenceScores[idx] = sigmoid(heatmaps[0][positionY][positionX][idx])
     }*/
-
-    auto it = Npu::ChunkF::Iterator();
-    outputs.clear(&it);
     return status;
 }
