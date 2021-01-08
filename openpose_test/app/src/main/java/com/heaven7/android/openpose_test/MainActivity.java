@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         OpenposeDetector.DebugCallback, OpenposeCameraManager.Callback, ImagePickComponent.Callback {
 
     private static final String TAG = "MainActivity";
-    private static final float EXPECT = 0.01f;
+    private static final float EXPECT = 0.8f;
     @BindView(R.id.container)
     ViewGroup mVg_camera;
     @BindView(R.id.vg_imgs)
@@ -250,6 +250,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             if(mTestDiff && this.mPose1 != null){
                 final List<Integer> ids = OpenposeDiffUtils.match(this.mPose1, mPose1, EXPECT);
                 System.out.println("onRecognized mismatch ids = " + ids);
+                OpenposeUtils.print(this.mPose1, mPose1);
                 //cropped image. just for debug
                 Canvas canvas = new Canvas(mCopyCropBitmap);
                 mOCM.drawMismatch(canvas, list.get(0).parts, ids);
@@ -294,7 +295,9 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             System.err.println("no pose1");
             return Collections.emptyList();
         }
-        return OpenposeDiffUtils.match(mPose1, toPose(map), EXPECT);
+        float[][] pose2 = toPose(map);
+        OpenposeUtils.print(this.mPose1, pose2);
+        return OpenposeDiffUtils.match(mPose1, pose2, EXPECT);
     }
     private float[][] toPose(Map<Integer, Coord> map){
         final float[][] pose2 = new float[Common.CocoPairs.length][];

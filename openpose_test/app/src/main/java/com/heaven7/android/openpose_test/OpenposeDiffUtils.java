@@ -21,8 +21,8 @@ class Pair {
     public float[] normalize() {
         float dist = distance();
         return new float[]{
-                (pt2[0] - pt1[0]) / (dist + 1f/*eps*/),
-                (pt2[1] - pt1[1]) / (dist + 1f/*eps*/)
+                (pt2[0] - pt1[0]) / (dist + 0.001f/*eps*/),
+                (pt2[1] - pt1[1]) / (dist + 0.001f/*eps*/)
         };
     }
 
@@ -88,7 +88,7 @@ class PoseDiff {
         assert pose1_waist_neck.distance() > 20;
         assert pose2_waist_neck.distance() > 20;
 
-        float scale_ratio = pose2_waist_neck.distance() / (pose1_waist_neck.distance() + 0.1f/*eps*/);
+        float scale_ratio = pose2_waist_neck.distance() / (pose1_waist_neck.distance() + 0.0001f/*eps*/);
         float shift_factor_y = pose2_waist_neck.pt1[0] - pose1_waist_neck.pt1[0] * scale_ratio;
         float shift_factor_x = pose2_waist_neck.pt1[1] - pose1_waist_neck.pt1[1] * scale_ratio;
 
@@ -111,7 +111,7 @@ class PoseDiff {
         float   limb2_len = limb2.distance();
 
         float dir_score = Math.max(limb1_vec[0] * limb2_vec[0] + limb1_vec[1] * limb2_vec[1], 0);
-        float len_score = Math.min(limb1_len / (limb2_len + 0.1f/*eps*/), limb2_len / (limb1_len + 0.1f/*eps*/));
+        float len_score = Math.min(limb1_len / (limb2_len + 0.0001f/*eps*/), limb2_len / (limb1_len + 0.0001f/*eps*/));
 
         return dir_score * len_score;
     }
@@ -230,6 +230,9 @@ public final class OpenposeDiffUtils {
             float val = result[i];
             //去掉非stand的 diff. 超过阈值就认定为miss
             if(mainPose[i][0] != 0 && val > expect){
+                if(i == 1){//posenet doesn't have neck
+                    continue;
+                }
                 if(i == 8){
                     waist_miss = true;
                 }else {
@@ -238,7 +241,7 @@ public final class OpenposeDiffUtils {
             }
         }
         //根据未识别到的腰index. 添加左右臀
-        if(waist_miss){
+       /* if(waist_miss){
             int idx = Common.CocoPart.LHip.index;
             if(mainPose[idx][0] != 0 && !mismatch.contains(idx)){
                 mismatch.add(idx);
@@ -247,7 +250,7 @@ public final class OpenposeDiffUtils {
             if(mainPose[idx][0] != 0 && !mismatch.contains(idx)){
                 mismatch.add(idx);
             }
-        }
+        }*/
         return mismatch;
     }
 }
