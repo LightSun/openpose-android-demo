@@ -47,6 +47,7 @@ namespace Npu {
         int size() {
             return this->_size;
         }
+        //32*9*9 -> 9*9*32 (mnl)
         //m*n*l (i, j , k)
         //b[i*(l*n)+j*l+k%l] = a[i][j][k]
         float getValue(int i, int j, int k) {

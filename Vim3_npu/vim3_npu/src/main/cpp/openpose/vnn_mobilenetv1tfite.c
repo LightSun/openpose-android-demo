@@ -218,10 +218,11 @@ vsi_nn_graph_t * vnn_CreateMobilenetv1Tfite
     attr.size[2] = 257;
     attr.size[3] = 1;
     attr.dim_num = 4;
-    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
+
+   /* attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     NEW_NORM_TENSOR(norm_tensor[0], attr, VSI_NN_TYPE_FLOAT16);
 
-    /* @output_59:out0 */
+    *//* @output_59:out0 *//*
     attr.size[0] = 17;
     attr.size[1] = 9;
     attr.size[2] = 9;
@@ -230,7 +231,7 @@ vsi_nn_graph_t * vnn_CreateMobilenetv1Tfite
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     NEW_NORM_TENSOR(norm_tensor[1], attr, VSI_NN_TYPE_FLOAT16);
 
-    /* @output_60:out0 */
+    *//* @output_60:out0 *//*
     attr.size[0] = 34;
     attr.size[1] = 9;
     attr.size[2] = 9;
@@ -239,7 +240,7 @@ vsi_nn_graph_t * vnn_CreateMobilenetv1Tfite
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     NEW_NORM_TENSOR(norm_tensor[2], attr, VSI_NN_TYPE_FLOAT16);
 
-    /* @output_61:out0 */
+    *//* @output_61:out0 *//*
     attr.size[0] = 32;
     attr.size[1] = 9;
     attr.size[2] = 9;
@@ -248,16 +249,63 @@ vsi_nn_graph_t * vnn_CreateMobilenetv1Tfite
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
     NEW_NORM_TENSOR(norm_tensor[3], attr, VSI_NN_TYPE_FLOAT16);
 
-    /* @output_62:out0 */
+    *//* @output_62:out0 *//*
     attr.size[0] = 32;
     attr.size[1] = 9;
     attr.size[2] = 9;
     attr.size[3] = 1;
     attr.dim_num = 4;
     attr.dtype.qnt_type = VSI_NN_QNT_TYPE_NONE;
-    NEW_NORM_TENSOR(norm_tensor[4], attr, VSI_NN_TYPE_FLOAT16);
+    NEW_NORM_TENSOR(norm_tensor[4], attr, VSI_NN_TYPE_FLOAT16);*/
 
+    attr.dtype.scale = 0.007781863;
+    attr.dtype.zero_point = 128;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+    NEW_NORM_TENSOR(norm_tensor[0], attr, VSI_NN_TYPE_UINT8);
 
+    /* @output_59:out0 */
+    attr.size[0] = 17;
+    attr.size[1] = 9;
+    attr.size[2] = 9;
+    attr.size[3] = 1;
+    attr.dim_num = 4;
+    attr.dtype.scale = 0.090034656;
+    attr.dtype.zero_point = 177;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+    NEW_NORM_TENSOR(norm_tensor[1], attr, VSI_NN_TYPE_UINT8);
+
+    /* @output_60:out0 */
+    attr.size[0] = 34;
+    attr.size[1] = 9;
+    attr.size[2] = 9;
+    attr.size[3] = 1;
+    attr.dim_num = 4;
+    attr.dtype.scale = 0.246421337;
+    attr.dtype.zero_point = 133;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+    NEW_NORM_TENSOR(norm_tensor[2], attr, VSI_NN_TYPE_UINT8);
+
+    /* @output_61:out0 */
+    attr.size[0] = 32;
+    attr.size[1] = 9;
+    attr.size[2] = 9;
+    attr.size[3] = 1;
+    attr.dim_num = 4;
+    attr.dtype.scale = 0.568581283;
+    attr.dtype.zero_point = 66;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+    NEW_NORM_TENSOR(norm_tensor[3], attr, VSI_NN_TYPE_UINT8);
+
+    /* @output_62:out0 */
+    attr.size[0] = 32;
+    attr.size[1] = 9;
+    attr.size[2] = 9;
+    attr.size[3] = 1;
+    attr.dim_num = 4;
+    attr.dtype.scale = 0.41644901;
+    attr.dtype.zero_point = 180;
+    attr.dtype.qnt_type = VSI_NN_QNT_TYPE_AFFINE_ASYMMETRIC;
+    NEW_NORM_TENSOR(norm_tensor[4], attr, VSI_NN_TYPE_UINT8);
 
 
 

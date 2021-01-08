@@ -49,7 +49,7 @@ static void _load_input_meta()
     input_meta_tab[0].image.mean[0] = 128.0;
     input_meta_tab[0].image.mean[1] = 128.0;
     input_meta_tab[0].image.mean[2] = 128.0;
-    input_meta_tab[0].image.scale = 1.0;
+    input_meta_tab[0].image.scale = 0.0078125; //0.0078125. old is 1.0
 
 
 }

@@ -9,7 +9,16 @@
                 3
             ],
             "format": "nhwc",
-            "dtype": "float32"
+            "dtype": "asymmetric_affine",
+            "quantize": {
+                "qtype": "u8",
+                "zero_point": [
+                    128
+                ],
+                "scale": [
+                    0.007781862746924162
+                ]
+            }
         }
     },
     "Outputs": {
@@ -22,7 +31,16 @@
                 17
             ],
             "format": "nhwc",
-            "dtype": "float32"
+            "dtype": "asymmetric_affine",
+            "quantize": {
+                "qtype": "u8",
+                "zero_point": [
+                    177
+                ],
+                "scale": [
+                    0.09003465622663498
+                ]
+            }
         },
         "output_60": {
             "name": "output",
@@ -33,7 +51,16 @@
                 34
             ],
             "format": "nhwc",
-            "dtype": "float32"
+            "dtype": "asymmetric_affine",
+            "quantize": {
+                "qtype": "u8",
+                "zero_point": [
+                    133
+                ],
+                "scale": [
+                    0.24642133712768555
+                ]
+            }
         },
         "output_61": {
             "name": "output",
@@ -44,7 +71,16 @@
                 32
             ],
             "format": "nhwc",
-            "dtype": "float32"
+            "dtype": "asymmetric_affine",
+            "quantize": {
+                "qtype": "u8",
+                "zero_point": [
+                    66
+                ],
+                "scale": [
+                    0.5685812830924988
+                ]
+            }
         },
         "output_62": {
             "name": "output",
@@ -55,7 +91,16 @@
                 32
             ],
             "format": "nhwc",
-            "dtype": "float32"
+            "dtype": "asymmetric_affine",
+            "quantize": {
+                "qtype": "u8",
+                "zero_point": [
+                    180
+                ],
+                "scale": [
+                    0.41644901037216187
+                ]
+            }
         }
     }
 }

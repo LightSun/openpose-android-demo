@@ -41,7 +41,7 @@ namespace Npu{
         chunk = new ChunkF(9*9*34);
         _outputArray.add(chunk);
         //sz = w * h * 3 //stride often is 2
-        _tensorData = (uint8_t *)malloc(2 * w * h * 3 * sizeof(uint8_t));
+        _tensorData = (uint8_t *)malloc(1 * w * h * 3 * sizeof(uint8_t));
     }
     bool NNHApi::inference(jobject bitmap, Npu::OpenposeOut& out) {
         AndroidBitmapInfo bmpInfo;
@@ -146,6 +146,7 @@ static vsi_nn_graph_t *vnn_CreateNeuralNetwork
     usVal = (tmsEnd - tmsStart)/1000;
     printf("Create Neural Network: %ldms or %ldus\n", msVal, usVal);
 
+    return graph;
     final:
     printf("create graph failed");
     return graph;
