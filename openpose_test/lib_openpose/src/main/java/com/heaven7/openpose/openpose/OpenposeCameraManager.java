@@ -142,10 +142,10 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         mHandleInfo.scale1 = 1 / s;
         //align
         croppedBitmap = ImageUtils.alignWidthHeight(bitmap, MP_INPUT_SIZE, MP_INPUT_SIZE);
-        //对齐宽高. 保证人一定能被完整的保存下来
+        //align wh
         int wh = Math.max(bitmap.getWidth(), bitmap.getHeight());
         mHandleInfo.scale2 = wh * 1f / MP_INPUT_SIZE;
-        //为了渲染出最后不正确的动作。需要将最后识别出的动作对齐到原图。
+        //for align to raw bitmap
         mHandleInfo.compensateWidth = wh - bitmap.getWidth();
         mHandleInfo.compensateHeight = wh - bitmap.getHeight();
         mHandleInfo.finalWidth = MP_INPUT_SIZE;

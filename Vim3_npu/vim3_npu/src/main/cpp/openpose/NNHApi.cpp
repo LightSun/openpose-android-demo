@@ -100,6 +100,7 @@ namespace Npu{
             free(_tensorData);
             _tensorData = nullptr;
         }
+        releaseGraph();
     }
     void NNHApi::releaseGraph() {
         if(graph){
