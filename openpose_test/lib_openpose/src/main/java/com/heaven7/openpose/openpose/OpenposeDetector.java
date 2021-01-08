@@ -46,8 +46,6 @@ public final class OpenposeDetector {
         detector = api;
     }
     public int recognizeImageFromAssets(Scheduler scheduler, String assetPath, final Callback cb) {
-        int expectSize = MP_INPUT_SIZE * RATIO;
-
         ImageParser parser = new ImageParser(MP_INPUT_SIZE * RATIO, MP_INPUT_SIZE * RATIO,
                 Bitmap.Config.ARGB_8888, false);
         parser.setCallback(new SimpleResizeCallback());
@@ -90,9 +88,13 @@ public final class OpenposeDetector {
         parser.setCallback(new SimpleResizeCallback());
         float[] outInfo = new float[2];
         Bitmap bitmap = parser.parseToBitmap(filePath, outInfo);
+        if(outInfo[0] <= 0){
+            outInfo[0] = 1;
+            bitmap = BitmapFactory.decodeFile(filePath, null);
+        }
         ImageHandleInfo info = new ImageHandleInfo();
         info.scale1 = outInfo[0];
-        info.key = key;
+        info.key = key != null ? key : filePath;
         return recognizeImage0(scheduler, bitmap, info, cb);
     }
 

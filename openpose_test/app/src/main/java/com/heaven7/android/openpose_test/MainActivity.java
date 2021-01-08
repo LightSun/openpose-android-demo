@@ -1,10 +1,13 @@
 package com.heaven7.android.openpose_test;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -17,10 +20,13 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
+import com.heaven7.android.component.gallery.ImagePickComponent;
+import com.heaven7.android.component.gallery.PickOption;
 import com.heaven7.android.openpose.api.Common;
 import com.heaven7.android.openpose.api.OpenposeApi;
 import com.heaven7.android.openpose.api.bean.Coord;
 import com.heaven7.android.openpose.api.bean.Human;
+import com.heaven7.core.util.Logger;
 import com.heaven7.core.util.PermissionHelper;
 import com.heaven7.java.base.util.Predicates;
 import com.heaven7.java.pc.schedulers.Schedulers;
@@ -41,7 +47,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements OpenposeDetector.Callback,
-        OpenposeDetector.DebugCallback, OpenposeCameraManager.Callback {
+        OpenposeDetector.DebugCallback, OpenposeCameraManager.Callback, ImagePickComponent.Callback {
 
     private static final String TAG = "MainActivity";
     private static final float EXPECT = 0.01f;
@@ -77,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     private DebugCallback0 debugCB = new DebugCallback0();
     private boolean prepared = false;
     private PermissionHelper mHelper = new PermissionHelper(this);
+    private final SimpleImagePickComponent mComponent = new SimpleImagePickComponent();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -133,6 +140,13 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             }
         });
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        mComponent.onActivityResult(this, requestCode, resultCode, data);
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if(mOCM != null){
@@ -200,21 +214,22 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         Glide.with(getApplicationContext()).load("file:///android_asset/" + path).into(iv1);
         mDetector.recognizeImageFromAssets(Schedulers.io(), path, this);
     }
-    public void onClickDirectImage2(View view) {
+    public void onClickSelectImage(View view) {
         if(!prepared){
             System.err.println("npu not prepared");
             return;
         }
         mTestDiff = true;
+        mPose1 = null;
+
         if(mDetector == null){
             mDetector = new OpenposeDetector(this, mApi);
         }
         mVg_imgs.setVisibility(View.VISIBLE);
         mVg_camera.setVisibility(View.GONE);
 
-        String path = "test.jpg";
-        Glide.with(getApplicationContext()).load("file:///android_asset/" + path).into(iv1);
-        mDetector.recognizeImageFromAssets(Schedulers.io(), path, this);
+        PickOption option = new PickOption.Builder().setMaxCount(1).build();
+        mComponent.startPickFromGallery(this, option, this);
     }
     @Override
     public void onRecognized(Bitmap bitmap, ImageHandleInfo key, final List<Human> list) {
@@ -232,7 +247,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             }
             //mOCM.setMainCoordMap(list.get(0).parts);
             float[][] mPose1 = toPose(list.get(0).parts);
-            if(mTestDiff){
+            if(mTestDiff && this.mPose1 != null){
                 final List<Integer> ids = OpenposeDiffUtils.match(this.mPose1, mPose1, EXPECT);
                 System.out.println("onRecognized mismatch ids = " + ids);
                 //cropped image. just for debug
@@ -336,6 +351,18 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             }
         }
     }
+    @Override
+    public void onPickResult(Activity activity, List<String> files) {
+        if(!files.isEmpty()){
+            String file = files.get(0);
+            Glide.with(getApplicationContext()).load(file).into(iv1);
+            Logger.d(TAG,  "onPickResult", file);
+            mDetector.recognizeImage(Schedulers.io(), file, null, this);
+        }else {
+            Logger.w(TAG,  "onPickResult", "no file");
+        }
+    }
+
     private class DrawCallback0 extends OpenposeCameraManager.DrawCallback {
 
         private final Context ctx;
