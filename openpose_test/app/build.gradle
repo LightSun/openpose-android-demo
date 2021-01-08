@@ -56,6 +56,9 @@ dependencies {
 
     implementation 'com.github.LightSun:Produce-consume:1.0.2-beta4'
     implementation 'com.heaven7.java.visitor:Visitor:1.3.7'
+    implementation('com.github.LightSun:util-v1:2.0.1') {
+        exclude module: 'android-component'
+    }
 
     def butterknife = '10.0.0'
     implementation "com.jakewharton:butterknife:${butterknife}"

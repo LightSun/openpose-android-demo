@@ -3,6 +3,7 @@ package com.heaven7.android.openpose_test;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.Manifest;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -20,6 +21,7 @@ import com.heaven7.android.openpose.api.Common;
 import com.heaven7.android.openpose.api.OpenposeApi;
 import com.heaven7.android.openpose.api.bean.Coord;
 import com.heaven7.android.openpose.api.bean.Human;
+import com.heaven7.core.util.PermissionHelper;
 import com.heaven7.java.base.util.Predicates;
 import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.java.visitor.MapFireVisitor;
@@ -73,6 +75,8 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     private Bitmap mRawBitmap;
 
     private DebugCallback0 debugCB = new DebugCallback0();
+    private boolean prepared = false;
+    private PermissionHelper mHelper = new PermissionHelper(this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,8 +102,37 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                 return true;
             }
         });
-    }
 
+        mHelper.startRequestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, 1, new PermissionHelper.ICallback() {
+            @Override
+            public void onRequestPermissionResult(String s, int i, boolean b) {
+                System.out.println("permission result: " + b);
+                if(b){
+                    prepareAsync();
+                }
+            }
+            @Override
+            public boolean handlePermissionHadRefused(String s, int i, Runnable runnable) {
+                return false;
+            }
+        });
+    }
+    private void prepareAsync(){
+        Schedulers.io().newWorker().schedule(new Runnable() {
+            @Override
+            public void run() {
+                mApi.prepare(getApplicationContext());
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mApi.initialize(getApplicationContext());
+                        prepared = true;
+                        System.out.println("(NPU) nnpai create success.");
+                    }
+                });
+            }
+        });
+    }
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if(mOCM != null){
@@ -137,6 +170,10 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     }
 
     public void onClickCamera(View view) {
+        if(!prepared){
+            System.err.println("npu not prepared");
+            return;
+        }
         mVg_imgs.setVisibility(View.GONE);
         mVg_camera.setVisibility(View.VISIBLE);
 
@@ -148,6 +185,10 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     }
 
     public void onClickDirectImage(View view) {
+        if(!prepared){
+            System.err.println("npu not prepared");
+            return;
+        }
         mTestDiff = false;
         if(mDetector == null){
             mDetector = new OpenposeDetector(this, mApi);
@@ -160,6 +201,10 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mDetector.recognizeImageFromAssets(Schedulers.io(), path, this);
     }
     public void onClickDirectImage2(View view) {
+        if(!prepared){
+            System.err.println("npu not prepared");
+            return;
+        }
         mTestDiff = true;
         if(mDetector == null){
             mDetector = new OpenposeDetector(this, mApi);
