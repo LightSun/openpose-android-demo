@@ -15,6 +15,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -29,7 +30,10 @@ import com.heaven7.android.openpose.api.bean.Coord;
 import com.heaven7.android.openpose.api.bean.Human;
 import com.heaven7.core.util.Logger;
 import com.heaven7.core.util.PermissionHelper;
+import com.heaven7.java.base.util.FileUtils;
+import com.heaven7.java.base.util.IOUtils;
 import com.heaven7.java.base.util.Predicates;
+import com.heaven7.java.base.util.Scheduler;
 import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.java.visitor.MapFireVisitor;
 import com.heaven7.java.visitor.collection.KeyValuePair;
@@ -39,6 +43,11 @@ import com.heaven7.openpose.openpose.OpenposeDetector;
 import com.heaven7.openpose.openpose.OverlayView;
 import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -79,7 +88,6 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     private boolean mTestDiff;
     private Bitmap mCopyCropBitmap;
     private Bitmap mRawBitmap;
-    private Bitmap mParserImage;
 
     private DebugCallback0 debugCB = new DebugCallback0();
     private boolean prepared = false;
@@ -99,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mOCM.setOpenposeApi(mApi);
         mOCM.setCallback(this);
         mOCM.setDebugCallback(debugCB);
-        //mOCM.setDebug(true);
         mOCM.enableCount(true);
         mOCM.setDrawCallback(new DrawCallback0(this));
         mVg_camera.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
@@ -135,7 +142,9 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                     public void run() {
                         mApi.initialize(getApplicationContext());
                         prepared = true;
-                        System.out.println("(NPU) nnpai create success.");
+                        System.out.println("(opt-NPU) nnpai create success.");
+                        //for test
+                        onClickGenDatas(null);
                     }
                 });
             }
@@ -232,6 +241,42 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         PickOption option = new PickOption.Builder().setMaxCount(1).build();
         mComponent.startPickFromGallery(this, option, this);
     }
+    public void onClickGenDatas(View view){
+        if(!prepared){
+            System.err.println("npu not prepared");
+            return;
+        }
+        mTestDiff = true;
+        mPose1 = null;
+
+        if(mDetector == null){
+            mDetector = new OpenposeDetector(this, mApi);
+        }
+        mVg_imgs.setVisibility(View.VISIBLE);
+        mVg_camera.setVisibility(View.GONE);
+
+        Schedulers.io().newWorker().schedule(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("-------- posenet start ----------");
+                String dir = Environment.getExternalStorageDirectory() + "/temp/openpose"; //std posenet
+               // String dir = Environment.getExternalStorageDirectory() + "/temp2/openpose"; //npu posenet
+                List<String> files = FileUtils.getFiles(new File(dir), "jpg");
+                Scheduler scheduler = Schedulers.single();
+                for (String file : files){
+                    if(FileUtils.getFileName(file).endsWith("__marked")){
+                        continue;
+                    }
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mDetector.recognizeImage(scheduler, file, null, new DumpCallback(true));
+                        }
+                    });
+                }
+            }
+        });
+    }
     @Override
     public void onRecognized(Bitmap bitmap, ImageHandleInfo key, final List<Human> list) {
         /*
@@ -283,7 +328,6 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     @Override
     public void debugParserImage(Bitmap bitmap) {
         iv2.setImageBitmap(bitmap);
-        mParserImage = Bitmap.createBitmap(bitmap);
     }
     @Override
     public void debugCropImage(Bitmap bitmap) {
@@ -362,22 +406,53 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             String file = files.get(0);
             Glide.with(getApplicationContext()).load(file).into(iv1);
             Logger.d(TAG,  "onPickResult", file);
-            mDetector.recognizeImage(Schedulers.io(), file, null, new SelectImageCallback());
+            mDetector.recognizeImage(Schedulers.io(), file, null, new DumpCallback(false));
         }else {
             Logger.w(TAG,  "onPickResult", "no file");
         }
     }
 
-    private class SelectImageCallback implements OpenposeDetector.Callback,OpenposeDetector.DebugCallback{
+    private class DumpCallback implements OpenposeDetector.Callback,OpenposeDetector.DebugCallback{
 
-        Canvas canvas;
+        private Bitmap mParserImage;
+        private Canvas canvas;
+        private boolean saveData;
+
+        public DumpCallback(boolean saveData) {
+            this.saveData = saveData;
+        }
 
         @Override
         public void onRecognized(Bitmap bitmap, ImageHandleInfo key, List<Human> list) {
             System.out.println("---------- SelectImageCallback ----------- " + list.size());
-            for (Human human : list){
-                for (Map.Entry<Integer, Coord> en :human.parts.entrySet()){
-                    System.out.println(en.getKey() + ":  " + en.getValue());
+            System.out.println("scanned: " + key.key);
+            String path = (String) key.key;
+            String fileDir = FileUtils.getFileDir(path, 1, true);
+            String name = FileUtils.getFileName(path);
+            //save data
+            StringWriter sw = new StringWriter();
+            if(!list.isEmpty() && !list.get(0).parts.isEmpty()){
+                mPose1 = toPose(list.get(0).parts);
+                if(saveData){
+                    //print to
+                    sw.write("--------------- to diff data -----------------\n");
+                    sw.write(OpenposeUtils.printTo(null, mPose1));
+                    sw.write("\n");
+                    sw.write("\n");
+                    sw.write("--------------- raw data ----------------------\n");
+                    for (Human human : list){
+                        for (Map.Entry<Integer, Coord> en :human.parts.entrySet()){
+                            sw.write(en.getKey() + ":  " + en.getValue() + "\n");
+                        }
+                    }
+                    FileUtils.writeTo(new File(fileDir, name + ".txt"), sw.toString());
+                }
+            }else {
+                mPose1 = null;
+                for (Human human : list){
+                    for (Map.Entry<Integer, Coord> en :human.parts.entrySet()){
+                        System.out.println(en.getKey() + ":  " + en.getValue());
+                    }
                 }
             }
             key.scale1 = 1;
@@ -388,7 +463,20 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                     iv4.setImageBitmap(mParserImage);
                 }
             });
-            mPose1 = toPose(list.get(0).parts);
+            //save marked image
+            if(saveData){
+                File outFile = new File(fileDir, name + "__marked.jpeg");
+                OutputStream outSteam = null;
+                try {
+                    outSteam = new FileOutputStream(outFile);
+                    mParserImage.compress(Bitmap.CompressFormat.JPEG, 100, outSteam);
+                }catch (Exception e){
+                    e.printStackTrace();
+                }finally {
+                    IOUtils.closeQuietly(outSteam);
+                }
+                System.out.println("save data ok: " + outFile.getAbsolutePath());
+            }
         }
         @Override
         public void debugRawImage(Bitmap bitmap) {

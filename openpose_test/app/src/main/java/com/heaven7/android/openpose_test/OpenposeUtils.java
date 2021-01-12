@@ -1,9 +1,17 @@
 package com.heaven7.android.openpose_test;
 
-import com.heaven7.core.util.Logger;
-
 public final class OpenposeUtils {
     private static final String TAG = "OpenposeUtils";
+
+    public static String printTo(StringBuilder sb, float[][] pose1){
+        if(sb == null){
+            sb = new StringBuilder();
+        }
+        sb.append("mainPose:\n").append("{");
+        appendPose(pose1, sb);
+        sb.append("}");
+        return sb.toString();
+    }
 
     public static void print(float[][] pose1, float[][] pose2){
         StringBuilder sb = new StringBuilder();

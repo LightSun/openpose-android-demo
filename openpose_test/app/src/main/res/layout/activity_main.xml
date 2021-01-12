@@ -33,6 +33,13 @@
             android:onClick="onClickSelectImage"
             android:text="select image"
             />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:onClick="onClickGenDatas"
+            android:text="gen datas"
+            />
     </LinearLayout>
 
     <FrameLayout
