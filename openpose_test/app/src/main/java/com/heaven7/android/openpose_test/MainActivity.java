@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -77,8 +78,8 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     private float[][] mPose1;
     private boolean mTestDiff;
     private Bitmap mCopyCropBitmap;
-
     private Bitmap mRawBitmap;
+    private Bitmap mParserImage;
 
     private DebugCallback0 debugCB = new DebugCallback0();
     private boolean prepared = false;
@@ -282,6 +283,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     @Override
     public void debugParserImage(Bitmap bitmap) {
         iv2.setImageBitmap(bitmap);
+        mParserImage = Bitmap.createBitmap(bitmap);
     }
     @Override
     public void debugCropImage(Bitmap bitmap) {
@@ -360,9 +362,48 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             String file = files.get(0);
             Glide.with(getApplicationContext()).load(file).into(iv1);
             Logger.d(TAG,  "onPickResult", file);
-            mDetector.recognizeImage(Schedulers.io(), file, null, this);
+            mDetector.recognizeImage(Schedulers.io(), file, null, new SelectImageCallback());
         }else {
             Logger.w(TAG,  "onPickResult", "no file");
+        }
+    }
+
+    private class SelectImageCallback implements OpenposeDetector.Callback,OpenposeDetector.DebugCallback{
+
+        Canvas canvas;
+
+        @Override
+        public void onRecognized(Bitmap bitmap, ImageHandleInfo key, List<Human> list) {
+            System.out.println("---------- SelectImageCallback ----------- " + list.size());
+            for (Human human : list){
+                for (Map.Entry<Integer, Coord> en :human.parts.entrySet()){
+                    System.out.println(en.getKey() + ":  " + en.getValue());
+                }
+            }
+            key.scale1 = 1;
+            mOCM.drawMismatch(canvas, list.get(0).parts, key, Collections.emptyList());
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    iv4.setImageBitmap(mParserImage);
+                }
+            });
+            mPose1 = toPose(list.get(0).parts);
+        }
+        @Override
+        public void debugRawImage(Bitmap bitmap) {
+
+        }
+        @Override
+        public void debugParserImage(Bitmap bitmap) {
+            mParserImage = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), bitmap.getConfig());
+            canvas = new Canvas(mParserImage);
+            canvas.drawBitmap(bitmap, new Matrix(), null);
+            iv4.setImageBitmap(mParserImage);
+        }
+        @Override
+        public void debugCropImage(Bitmap bitmap) {
+
         }
     }
 
