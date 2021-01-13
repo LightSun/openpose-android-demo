@@ -29,6 +29,7 @@ import com.heaven7.android.openpose.api.OpenposeApi;
 import com.heaven7.android.openpose.api.bean.Coord;
 import com.heaven7.android.openpose.api.bean.Human;
 import com.heaven7.core.util.Logger;
+import com.heaven7.core.util.MainWorker;
 import com.heaven7.core.util.PermissionHelper;
 import com.heaven7.java.base.util.FileUtils;
 import com.heaven7.java.base.util.IOUtils;
@@ -36,6 +37,7 @@ import com.heaven7.java.base.util.Predicates;
 import com.heaven7.java.base.util.Scheduler;
 import com.heaven7.java.pc.schedulers.Schedulers;
 import com.heaven7.java.visitor.MapFireVisitor;
+import com.heaven7.java.visitor.PredicateVisitor;
 import com.heaven7.java.visitor.collection.KeyValuePair;
 import com.heaven7.java.visitor.collection.VisitServices;
 import com.heaven7.openpose.openpose.OpenposeCameraManager;
@@ -52,6 +54,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -94,6 +97,8 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
     private PermissionHelper mHelper = new PermissionHelper(this);
     private final SimpleImagePickComponent mComponent = new SimpleImagePickComponent();
 
+    private DrawCallback0 mDrawCallback;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -108,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mOCM.setCallback(this);
         mOCM.setDebugCallback(debugCB);
         mOCM.enableCount(true);
-        mOCM.setDrawCallback(new DrawCallback0(this));
+        mOCM.setDrawCallback(mDrawCallback = new DrawCallback0(this));
         mVg_camera.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
             @Override
             public boolean onPreDraw() {
@@ -255,27 +260,23 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mVg_imgs.setVisibility(View.VISIBLE);
         mVg_camera.setVisibility(View.GONE);
 
-        Schedulers.io().newWorker().schedule(new Runnable() {
+        System.out.println("-------- posenet start ----------");
+        String dir = Environment.getExternalStorageDirectory() + "/temp/openpose"; //std posenet
+
+        //System.out.println("-------- posenet npu start ----------");
+        //String dir = Environment.getExternalStorageDirectory() + "/temp2/openpose"; //npu posenet
+        List<String> files = FileUtils.getFiles(new File(dir), "jpg");
+        files = VisitServices.from(files).filter(new PredicateVisitor<String>() {
             @Override
-            public void run() {
-                System.out.println("-------- posenet start ----------");
-                String dir = Environment.getExternalStorageDirectory() + "/temp/openpose"; //std posenet
-               // String dir = Environment.getExternalStorageDirectory() + "/temp2/openpose"; //npu posenet
-                List<String> files = FileUtils.getFiles(new File(dir), "jpg");
-                Scheduler scheduler = Schedulers.single();
-                for (String file : files){
-                    if(FileUtils.getFileName(file).endsWith("__marked")){
-                        continue;
-                    }
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mDetector.recognizeImage(scheduler, file, null, new DumpCallback(true));
-                        }
-                    });
-                }
+            public Boolean visit(String s, Object param) {
+                return !FileUtils.getFileName(s).endsWith("__marked");
             }
-        });
+        }).getAsList();
+        System.out.println("files.size = " + files.size());
+        //设置绘制比例
+        mDrawCallback.setK(1);
+        DumpCallback2 dc = new DumpCallback2(files);
+        dc.start();
     }
     @Override
     public void onRecognized(Bitmap bitmap, ImageHandleInfo key, final List<Human> list) {
@@ -412,6 +413,34 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         }
     }
 
+    private class DumpCallback2 extends DumpCallback{
+
+        private final List<String> files;
+        private AtomicInteger index = new AtomicInteger(0);
+
+        public DumpCallback2(List<String> files) {
+            super(true);
+            this.files = files;
+        }
+
+        public void start(){
+            int idx = index.getAndIncrement();
+            if(files.size() > idx){
+                System.out.println("DumpCallback2 >>> start id = " + idx);
+                String file = files.get(idx);
+                mDetector.recognizeImage(Schedulers.io(), file, null, this);
+            }else {
+                System.out.println("DumpCallback2 >>> all scan done");
+            }
+        }
+
+        @Override
+        public void onRecognized(Bitmap bitmap, ImageHandleInfo key, List<Human> list) {
+            super.onRecognized(bitmap, key, list);
+            //start();
+        }
+    }
+
     private class DumpCallback implements OpenposeDetector.Callback,OpenposeDetector.DebugCallback{
 
         private Bitmap mParserImage;
@@ -436,7 +465,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                 if(saveData){
                     //print to
                     sw.write("--------------- to diff data -----------------\n");
-                    sw.write(OpenposeUtils.printTo(null, mPose1));
+                    sw.write(OpenposeUtils.printTo(mPose1));
                     sw.write("\n");
                     sw.write("\n");
                     sw.write("--------------- raw data ----------------------\n");
@@ -445,7 +474,9 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                             sw.write(en.getKey() + ":  " + en.getValue() + "\n");
                         }
                     }
-                    FileUtils.writeTo(new File(fileDir, name + ".txt"), sw.toString());
+                    File file = new File(fileDir, name + ".txt");
+                    FileUtils.writeTo(file, sw.toString());
+                    System.out.println("data save ok: " + file);
                 }
             }else {
                 mPose1 = null;
@@ -455,6 +486,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                     }
                 }
             }
+            //only render to parser image .not the raw image. so scale1 should be one.
             key.scale1 = 1;
             mOCM.drawMismatch(canvas, list.get(0).parts, key, Collections.emptyList());
             runOnUiThread(new Runnable() {
@@ -475,7 +507,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                 }finally {
                     IOUtils.closeQuietly(outSteam);
                 }
-                System.out.println("save data ok: " + outFile.getAbsolutePath());
+                System.out.println("save mark ok: " + outFile.getAbsolutePath());
             }
         }
         @Override
@@ -487,7 +519,12 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             mParserImage = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), bitmap.getConfig());
             canvas = new Canvas(mParserImage);
             canvas.drawBitmap(bitmap, new Matrix(), null);
-            iv4.setImageBitmap(mParserImage);
+            MainWorker.post(new Runnable() {
+                @Override
+                public void run() {
+                    iv4.setImageBitmap(mParserImage);
+                }
+            });
         }
         @Override
         public void debugCropImage(Bitmap bitmap) {
@@ -501,8 +538,13 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         private Canvas canvas;
         private Bitmap mMaskImage;
 
+        private float k = 3;
+
         public DrawCallback0(Context ctx) {
             this.ctx = ctx.getApplicationContext();
+        }
+        public void setK(float x) {
+            this.k = x;
         }
         @Override
         public int getPointColor(int id, boolean match, int defaultColor) {
@@ -510,11 +552,11 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         }
         @Override
         public float getPointRadius(boolean match) {
-            return 15;
+            return 5 * k;
         }
         @Override
         public float getConcatStrokeWidth(boolean match) {
-            return 6;
+            return 2 * k;
         }
         @Override
         public int getConcatColor(int id1, int id2, boolean match, int defaultColor) {

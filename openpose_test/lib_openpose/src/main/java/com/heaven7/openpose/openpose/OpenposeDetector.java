@@ -31,7 +31,7 @@ import static com.heaven7.openpose.openpose.OpenposeCameraManager.MP_INPUT_SIZE;
  */
 public final class OpenposeDetector {
 
-    private static final int RATIO = 2;
+    private static final int RATIO = 3;
     private final AtomicInteger mId = new AtomicInteger();
     private final SparseArray<Disposable> mTaskMap = new SparseArray<Disposable>();
 
