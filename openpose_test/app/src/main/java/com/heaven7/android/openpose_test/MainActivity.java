@@ -437,7 +437,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         @Override
         public void onRecognized(Bitmap bitmap, ImageHandleInfo key, List<Human> list) {
             super.onRecognized(bitmap, key, list);
-            //start();
+            start();
         }
     }
 
