@@ -260,11 +260,11 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mVg_imgs.setVisibility(View.VISIBLE);
         mVg_camera.setVisibility(View.GONE);
 
-        System.out.println("-------- posenet start ----------");
-        String dir = Environment.getExternalStorageDirectory() + "/temp/openpose"; //std posenet
+        //System.out.println("-------- posenet start ----------");
+        //String dir = Environment.getExternalStorageDirectory() + "/temp/openpose"; //std posenet
 
-        //System.out.println("-------- posenet npu start ----------");
-        //String dir = Environment.getExternalStorageDirectory() + "/temp2/openpose"; //npu posenet
+        System.out.println("-------- posenet npu start ----------");
+        String dir = Environment.getExternalStorageDirectory() + "/temp2/openpose"; //npu posenet
         List<String> files = FileUtils.getFiles(new File(dir), "jpg");
         files = VisitServices.from(files).filter(new PredicateVisitor<String>() {
             @Override
