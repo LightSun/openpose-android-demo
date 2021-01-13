@@ -7,11 +7,15 @@ import com.heaven7.android.vim3.npu.NpuOpenpose;
 import com.heaven7.openpose.openpose.JavaPosenet;
 
 public final class OpenposeApiFactory {
+    public static final boolean USE_NPU = true;
 
     public static OpenposeApi newApi(Context context){
         //TODO npu
-        return new JavaPosenet(context);
-        //return new NpuOpenpose();
+        if(USE_NPU){
+            return new NpuOpenpose();
+        }else {
+            return new JavaPosenet(context);
+        }
     }
 }
 //adb logcat | ndk-stack -sym armeabi-v7a >1.txt

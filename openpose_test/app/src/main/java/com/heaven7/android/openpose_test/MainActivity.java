@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         OpenposeDetector.DebugCallback, OpenposeCameraManager.Callback, ImagePickComponent.Callback {
 
     private static final String TAG = "MainActivity";
-    private static final float EXPECT = 0.8f;
+    private static final float EXPECT = 0.1f;
     @BindView(R.id.container)
     ViewGroup mVg_camera;
     @BindView(R.id.vg_imgs)
@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                         prepared = true;
                         System.out.println("(opt-NPU) nnpai create success.");
                         //for test
-                        onClickGenDatas(null);
+                        //onClickGenDatas(null);
                     }
                 });
             }
@@ -203,6 +203,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             System.err.println("npu not prepared");
             return;
         }
+        mTestDiff = true;
         mVg_imgs.setVisibility(View.GONE);
         mVg_camera.setVisibility(View.VISIBLE);
 
@@ -260,11 +261,17 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mVg_imgs.setVisibility(View.VISIBLE);
         mVg_camera.setVisibility(View.GONE);
 
-        //System.out.println("-------- posenet start ----------");
-        //String dir = Environment.getExternalStorageDirectory() + "/temp/openpose"; //std posenet
-
-        System.out.println("-------- posenet npu start ----------");
-        String dir = Environment.getExternalStorageDirectory() + "/temp2/openpose"; //npu posenet
+        doPosenet();
+    }
+    private void doPosenet(){
+        final String dir;
+        if(!OpenposeApiFactory.USE_NPU){
+            System.out.println("-------- posenet start ----------");
+            dir = Environment.getExternalStorageDirectory() + "/temp/openpose"; //std posenet
+        }else {
+            System.out.println("-------- posenet npu start ----------");
+            dir = Environment.getExternalStorageDirectory() + "/temp2/openpose"; //npu posenet
+        }
         List<String> files = FileUtils.getFiles(new File(dir), "jpg");
         files = VisitServices.from(files).filter(new PredicateVisitor<String>() {
             @Override
@@ -294,6 +301,7 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             }
             //mOCM.setMainCoordMap(list.get(0).parts);
             float[][] mPose1 = toPose(list.get(0).parts);
+            System.out.println(OpenposeUtils.printTo(mPose1));
             if(mTestDiff && this.mPose1 != null){
                 final List<Integer> ids = OpenposeDiffUtils.match(this.mPose1, mPose1, EXPECT);
                 System.out.println("onRecognized mismatch ids = " + ids);
@@ -417,10 +425,15 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
 
         private final List<String> files;
         private AtomicInteger index = new AtomicInteger(0);
+        private Runnable end;
 
         public DumpCallback2(List<String> files) {
             super(true);
             this.files = files;
+        }
+
+        public void setEndTask(Runnable end){
+            this.end = end;
         }
 
         public void start(){
@@ -431,6 +444,9 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                 mDetector.recognizeImage(Schedulers.io(), file, null, this);
             }else {
                 System.out.println("DumpCallback2 >>> all scan done");
+                if(end != null){
+                    end.run();
+                }
             }
         }
 
@@ -477,6 +493,8 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
                     File file = new File(fileDir, name + ".txt");
                     FileUtils.writeTo(file, sw.toString());
                     System.out.println("data save ok: " + file);
+                }else {
+                    System.out.println(OpenposeUtils.printTo(mPose1));
                 }
             }else {
                 mPose1 = null;
@@ -498,6 +516,9 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
             //save marked image
             if(saveData){
                 File outFile = new File(fileDir, name + "__marked.jpeg");
+                if(outFile.exists()){
+                    outFile.delete();
+                }
                 OutputStream outSteam = null;
                 try {
                     outSteam = new FileOutputStream(outFile);

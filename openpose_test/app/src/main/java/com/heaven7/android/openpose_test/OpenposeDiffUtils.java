@@ -1,7 +1,5 @@
 package com.heaven7.android.openpose_test;
 
-import com.heaven7.android.openpose.api.Common;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -229,7 +227,7 @@ public final class OpenposeDiffUtils {
         for (int i = 0 ; i < result.length ; i ++){
             float val = result[i];
             //去掉非stand的 diff. 超过阈值就认定为miss
-            if(mainPose[i][0] != 0 && val > expect){
+            if(mainPose[i][0] != 0 && val < expect){
                 if(i == 1){//posenet doesn't have neck
                     continue;
                 }
