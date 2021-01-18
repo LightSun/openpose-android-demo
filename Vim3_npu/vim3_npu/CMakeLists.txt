@@ -14,23 +14,23 @@ set_target_properties(ovxlib PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libovxlib.s
 add_library(jpeg_t SHARED IMPORTED)
 set_target_properties(jpeg_t PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libjpeg_t.so)
 
-add_library(cutils SHARED IMPORTED)
-set_target_properties(cutils PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libcutils.so)
+#add_library(cutils SHARED IMPORTED)
+#set_target_properties(cutils PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libcutils.so)
 
-add_library(GAL SHARED IMPORTED)
-set_target_properties(GAL PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libGAL.so)
+#add_library(GAL SHARED IMPORTED)
+#set_target_properties(GAL PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libGAL.so)
 
-add_library(NNArchPerf SHARED IMPORTED)
-set_target_properties(NNArchPerf PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libNNArchPerf.so)
+#add_library(NNArchPerf SHARED IMPORTED)
+#set_target_properties(NNArchPerf PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libNNArchPerf.so)
 
-add_library(archmodelSw SHARED IMPORTED)
-set_target_properties(archmodelSw PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libarchmodelSw.so)
+#add_library(archmodelSw SHARED IMPORTED)
+#set_target_properties(archmodelSw PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libarchmodelSw.so)
 
-add_library(OpenVX SHARED IMPORTED)
-set_target_properties(OpenVX PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libOpenVX.so)
+#add_library(OpenVX SHARED IMPORTED)
+#set_target_properties(OpenVX PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libOpenVX.so)
 
-add_library(VSC SHARED IMPORTED)
-set_target_properties(VSC PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libVSC.so)
+#add_library(VSC SHARED IMPORTED)
+#set_target_properties(VSC PROPERTIES IMPORTED_LOCATION ${LIB_DIR}/libVSC.so)
 
 add_library(openpose_npu SHARED ${src_openpose})
 find_library( # Sets the name of the path variable.

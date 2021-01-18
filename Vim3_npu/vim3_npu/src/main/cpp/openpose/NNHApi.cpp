@@ -89,7 +89,10 @@ namespace Npu{
         return false;
     }
     NNHApi::~NNHApi() {
-        free(rgbBuffer);
+        if(rgbBuffer != nullptr){
+            free(rgbBuffer);
+            rgbBuffer = nullptr;
+        }
         if(nbPath){
             free(nbPath);
             nbPath = nullptr;
