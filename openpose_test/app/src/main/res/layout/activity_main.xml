@@ -40,6 +40,13 @@
             android:onClick="onClickGenDatas"
             android:text="gen datas"
             />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAllCaps="false"
+            android:onClick="onClickTestPauseResume"
+            android:text="test pause-resume"
+            />
     </LinearLayout>
 
     <FrameLayout

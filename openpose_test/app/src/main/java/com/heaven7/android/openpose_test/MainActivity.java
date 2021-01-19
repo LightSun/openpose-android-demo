@@ -6,7 +6,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -111,7 +113,6 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mOCM = new OpenposeCameraManager(this, R.id.container){
             @Override
             protected void onPermissionGranted(Runnable next) {
-                mPermissionOk = true;
                 super.onPermissionGranted(next);
             }
         };
@@ -274,6 +275,34 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mVg_camera.setVisibility(View.GONE);
 
         doPosenet();
+    }
+    public void onClickTestPauseResume(View view){
+        if(mOCM != null){
+            Runnable task = new Runnable() {
+                @Override
+                public void run() {
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setPositiveButton("继续", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                    if(mOCM != null){
+                                        mOCM.onResume();
+                                    }
+                                }
+                            })
+                            .setNegativeButton("退出", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                    finish();
+                                }
+                            })
+                            .create().show();
+                }
+            };
+            mOCM.onPauseSafely(task);
+        }
     }
     private void doPosenet(){
         final String dir;

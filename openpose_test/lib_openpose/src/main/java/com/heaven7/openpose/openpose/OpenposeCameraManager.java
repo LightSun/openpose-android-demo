@@ -445,31 +445,46 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
     }
 
-    @Override
-    public synchronized void onPause() {
+    public void onPauseSafely(Runnable t){
         if(mPermissionRequesting){
             return;
         }
         System.out.println("onPause: processing = " + isProcessing());
+        if(mOnPauseCalled){
+            return;
+        }
         mOnPauseCalled = true;
         //需要先释放required 的 image
         if(isProcessingFrame){
             readyForNextImage();
         }
         if(isProcessing()){
+            if(t != null){
+                setPendingPause(t);
+            }
             unregisterReceiver();
             pause();
             return;
         }
+        setPendingPause(null);
         System.out.println("real onPause");
         unregisterReceiver();
         super.onPause();
         System.out.println("real onPause ok");
         mOnPauseCalled = false;
+        if(t != null){
+            MainWorker.post(t);
+        }
+    }
+
+    @Override
+    public synchronized void onPause() {
+        onPauseSafely(null);
     }
 
     @Override
     public synchronized void onResume() {
+        System.out.println("onResume");
         super.onResume();
         registerReceiver();
     }
