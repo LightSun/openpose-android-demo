@@ -15,4 +15,7 @@ public interface OpenposeApi {
     void initialize(Context context);
     void destroy();
     List<Recognition> inference(Bitmap bitmap);
+
+    void detachJniEnv();
+    void releaseGraph();
 }

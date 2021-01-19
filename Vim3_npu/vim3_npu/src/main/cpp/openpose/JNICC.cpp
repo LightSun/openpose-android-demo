@@ -6,6 +6,7 @@
 #include "JNICC.h"
 #include "OpenposeOut.h"
 #include "NNHApi.h"
+#include "java_env.h"
 
 #define EC_JNIEXPORT extern "C" JNIEXPORT
 #define SURFACE_VIEW_JAVA_PREFIX                        com_heaven7_android_vim3_npu
@@ -80,10 +81,20 @@ Java_com_heaven7_android_vim3_npu_NpuOpenpose_nDestroy(JNIEnv *env, jclass clazz
     delete api;
 }
 extern "C"
+JNIEXPORT void JNICALL
+Java_com_heaven7_android_vim3_npu_NpuOpenpose_nDetachJniEnv(JNIEnv *env, jclass clazz) {
+    detachJNIEnv();
+}
+extern "C"
 JNIEXPORT jboolean JNICALL
 Java_com_heaven7_android_vim3_npu_NpuOpenpose_nInference(JNIEnv *env, jclass clazz, jlong nn_ptr,
                                                          jlong out_ptr, jobject bitmap) {
     Npu::NNHApi* api = reinterpret_cast<Npu::NNHApi *>(nn_ptr);
     Npu::OpenposeOut* out = reinterpret_cast<Npu::OpenposeOut *>(out_ptr);
     return static_cast<jboolean>(api->inference(bitmap, *out));
+}extern "C"
+JNIEXPORT void JNICALL
+Java_com_heaven7_android_vim3_npu_NpuOpenpose_nReleaseGraph(JNIEnv *env, jclass clazz, jlong nn_ptr) {
+    Npu::NNHApi* api = reinterpret_cast<Npu::NNHApi *>(nn_ptr);
+    api->releaseGraph();
 }

@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-//TODO test
 @Keep
 public class NpuOpenpose implements OpenposeApi {
 
@@ -68,6 +67,23 @@ public class NpuOpenpose implements OpenposeApi {
             mNNApi = 0;
         }
     }
+
+    @Override
+    public void detachJniEnv() {
+        try {
+            nDetachJniEnv();
+        }catch (Throwable e){
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void releaseGraph() {
+        if(mNNApi != 0){
+            nReleaseGraph(mNNApi);
+        }
+    }
+
     @Override
     public List<Recognition> inference(Bitmap bitmap) {
         long start = System.currentTimeMillis();
@@ -138,5 +154,7 @@ public class NpuOpenpose implements OpenposeApi {
 
     private static native long nInit(String nbPath, int w, int h);
     private static native void nDestroy(long nnPtr);
+    private static native void nDetachJniEnv();
+    private static native void nReleaseGraph(long nnPtr);
     private static native boolean nInference(long nnPtr, long outPtr, Bitmap bitmap);
 }

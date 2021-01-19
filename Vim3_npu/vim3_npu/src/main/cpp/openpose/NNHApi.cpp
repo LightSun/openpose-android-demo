@@ -42,15 +42,17 @@ namespace Npu{
         _outputArray.add(chunk);
         //sz = w * h * 3 //stride often is 2
         _tensorData = (uint8_t *)malloc(1 * w * h * 3 * sizeof(uint8_t));
+        LOGW("graph = %p, rgbBuffer = %p, _tensorData = %p", graph, rgbBuffer, _tensorData);
     }
     bool NNHApi::inference(jobject bitmap, Npu::OpenposeOut& out) {
         AndroidBitmapInfo bmpInfo;
         if (AndroidBitmap_getInfo(ensureJNIEnv(), bitmap, &bmpInfo) < 0) {
             return false;
         }
+        LOGW("graph = %p, rgbBuffer = %p, _tensorData = %p", graph, rgbBuffer, _tensorData);
         if(graph == nullptr){
-            LOGW("no graph.");
-            return false;
+            graph = vnn_CreateNeuralNetwork(nbPath);
+            LOGW("re-create graph.");
         }
         /* Pre process the image data */
         vsi_status status;
@@ -81,6 +83,7 @@ namespace Npu{
         status = vnn_PostProcess(_outputArray, graph, bmpInfo.width, bmpInfo.height, out);
         TEST_CHECK_STATUS(status, final);
         LOGI("vnn_PostProcess success.");
+        //releaseGraph();
         return true;
 
         final:
@@ -89,7 +92,7 @@ namespace Npu{
         return false;
     }
     NNHApi::~NNHApi() {
-        if(rgbBuffer != nullptr){
+        if(rgbBuffer){
             free(rgbBuffer);
             rgbBuffer = nullptr;
         }
@@ -97,16 +100,16 @@ namespace Npu{
             free(nbPath);
             nbPath = nullptr;
         }
-        auto it = ChunkF::Iterator();
-        _outputArray.clear(&it);
         if(_tensorData){
             free(_tensorData);
             _tensorData = nullptr;
         }
+        auto it = ChunkF::Iterator();
+        _outputArray.clear(&it);
         releaseGraph();
     }
     void NNHApi::releaseGraph() {
-        if(graph){
+        if(graph != nullptr){
             vnn_ReleaseNeuralNetwork(graph);
             graph = nullptr;
         }

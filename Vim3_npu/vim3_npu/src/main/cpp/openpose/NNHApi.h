@@ -45,8 +45,9 @@ namespace Npu{
 
         bool inference(jobject bitmap, Npu::OpenposeOut& out);
 
-    private:
         void releaseGraph();
+
+    private:
         vsi_nn_graph_t * graph;
         float* rgbBuffer;
         char* nbPath;
