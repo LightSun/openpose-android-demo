@@ -16,7 +16,7 @@
             android:name="com.heaven7.android.openpose_test.AppGlideModuleImpl"
             android:value="GlideModule" />
 
-        <activity android:name=".MainActivity"
+        <activity android:name=".EntryAc"
             android:screenOrientation="landscape"
             >
             <intent-filter>
@@ -25,6 +25,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".MainActivity"
+            android:screenOrientation="landscape"
+            />
 
         <activity
             android:name="com.heaven7.android.imagepick.CameraActivity"

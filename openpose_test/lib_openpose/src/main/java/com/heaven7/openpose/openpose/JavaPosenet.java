@@ -23,6 +23,15 @@ public class JavaPosenet implements OpenposeApi {
     }
 
     @Override
+    public void detachJniEnv() {
+
+    }
+    @Override
+    public void releaseGraph() {
+
+    }
+
+    @Override
     public void initialize(Context context) {
         if(posenet == null){
             posenet = new Posenet(context, "posenet_model.tflite", Device.CPU);

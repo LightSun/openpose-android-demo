@@ -44,7 +44,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     private Handler handler;
     private HandlerThread handlerThread;
     private boolean useCamera2API;
-    private boolean isProcessingFrame = false;
+    protected volatile boolean isProcessingFrame = false;
     private byte[][] yuvBytes = new byte[3][];
     private int[] rgbBytes = null; //len = w*h
     private int yRowStride;
@@ -55,7 +55,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     private Runnable postInferenceCallback;
     private Runnable imageConverter;
 
-    private boolean mPermissionRequesting;
+    protected boolean mPermissionRequesting;
     private Size mDesiredPreviewSize;
 
     private WeakReference<Fragment> mWeakFrag;
@@ -66,6 +66,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
     }
 
     public void show(){
+        System.out.println("show");
         if (hasPermission()) {
             showInternal();
         } else {
@@ -124,6 +125,9 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
                 };
         processImage();
     }
+    public boolean isOnPauseCalled(){
+        return false;
+    }
 
     @Override
     public void onImageAvailable(ImageReader reader) {
@@ -140,9 +144,11 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
             if (image == null) {
                 return;
             }
-
-            if (isProcessingFrame) {
+            //在释放这个image 之前，不能pause camera
+            System.out.println("reader.acquireLatestImage start");
+            if (isProcessingFrame || isOnPauseCalled()) {
                 image.close();
+                System.out.println("reader.acquireLatestImage end. mOnPauseCalled = " + isOnPauseCalled());
                 return;
             }
             isProcessingFrame = true;
@@ -157,6 +163,11 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
                     new Runnable() {
                         @Override
                         public void run() {
+                            if(isOnPauseCalled()){
+                                System.out.println("imageConverter >>> mOnPauseCalled = true");
+                                return;
+                            }
+                            System.out.println("--- convertYUV420ToARGB8888 start ---");
                             ImageUtils.convertYUV420ToARGB8888(
                                     yuvBytes[0],
                                     yuvBytes[1],
@@ -167,6 +178,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
                                     uvRowStride,
                                     uvPixelStride,
                                     rgbBytes);
+                            System.out.println("--- convertYUV420ToARGB8888 end ---");
                         }
                     };
 
@@ -175,6 +187,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
                         @Override
                         public void run() {
                             image.close();
+                            System.out.println("reader.acquireLatestImage end:  isProcessingFrame = " + isProcessingFrame);
                             isProcessingFrame = false;
                         }
                     };
@@ -216,7 +229,19 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         }
         resume();
     }
-
+    protected void quitWorkThread(boolean force){
+        if(handlerThread != null){
+            System.out.println("handlerThread quitSafely");
+            if(force){
+                handlerThread.quit();
+            }else {
+                handlerThread.quitSafely();
+            }
+            handlerThread = null;
+            handler = null;
+            System.out.println("handlerThread quitSafely ok");
+        }
+    }
     public synchronized void onPause() {
         LOGGER.d( "onPause " + this);
 
@@ -224,30 +249,29 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
             return;
         }
         pause();
-        if(handlerThread != null){
-            handlerThread.quitSafely();
-            try {
-                handlerThread.join();
-                handlerThread = null;
-                handler = null;
-            } catch (final InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        quitWorkThread(false);
     }
     public void onRequestPermissionsResult(
             final int requestCode, final String[] permissions, final int[] grantResults) {
         if (requestCode == PERMISSIONS_REQUEST) {
-            if (grantResults.length > 0
+            if (grantResults.length == 2
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED
                     && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                showInternal();
+                onPermissionGranted(new Runnable() {
+                    @Override
+                    public void run() {
+                        showInternal();
+                    }
+                });
             } else {
                 requestPermission();
             }
         }
     }
     //-------------------------- protected ----------------------
+    protected void onPermissionGranted(Runnable next){
+        next.run();
+    }
     protected abstract void processImage();
 
     protected abstract void onPreviewSizeChosen(final Size size, final int rotation);
@@ -307,6 +331,7 @@ public abstract class AbsOpenposeCameraManager implements ImageReader.OnImageAva
         if (postInferenceCallback != null) {
             postInferenceCallback.run();
         }
+        System.out.println("readyForNextImage ...");
     }
     protected int[] getRgbBytes() {
         imageConverter.run();

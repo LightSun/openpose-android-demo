@@ -9,6 +9,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.hardware.Camera;
+import android.media.ImageReader;
 import android.util.Size;
 import android.view.Surface;
 
@@ -20,6 +22,7 @@ import com.heaven7.android.openpose.api.OpenposeApi;
 import com.heaven7.android.openpose.api.bean.Coord;
 import com.heaven7.android.openpose.api.bean.Human;
 import com.heaven7.android.openpose.api.bean.Recognition;
+import com.heaven7.core.util.MainWorker;
 import com.heaven7.openpose.openpose.bean.ImageHandleInfo;
 import com.heaven7.openpose.openpose.env.ImageUtils;
 
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
@@ -69,11 +73,13 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     //debug info
     private final OpenposeDebug mOpenposeDebug = new OpenposeDebug();
     private DebugCallback debugCallback;
+    private volatile Runnable mPendingPause;
+    private volatile boolean mShouldDestroy;
+    private volatile boolean mOnPauseCalled;
 
     public OpenposeCameraManager(AppCompatActivity ac, @IdRes int mVg_container) {
         super(ac, mVg_container);
     }
-
     public void setCallback(Callback callback) {
         this.callback = callback;
     }
@@ -101,14 +107,44 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
     public void setOpenposeApi(OpenposeApi api){
         this.detector = api;
     }
-
+    public boolean isProcessing(){
+        return computingDetection;
+    }
+    @Override
+    public boolean isOnPauseCalled() {
+        return mOnPauseCalled;
+    }
     @Override
     public void onDestroy() {
+        if(mPendingPause != null && !mShouldDestroy){
+            mShouldDestroy = true;
+            System.out.println("onDestroy: mShouldDestroy = true");
+            return;
+        }
+        System.out.println("real onDestroy start ");
         if(detector != null){
+            System.out.println("openpose api destroy.");
             detector.destroy();
             detector = null;
         }
         super.onDestroy();
+        System.out.println("real onDestroy end");
+    }
+
+    @Override
+    public void onPreviewFrame(byte[] bytes, Camera camera) {
+        if(mPendingPause != null){
+            return;
+        }
+        super.onPreviewFrame(bytes, camera);
+    }
+
+    @Override
+    public void onImageAvailable(ImageReader reader) {
+        if(mPendingPause != null){
+            return;
+        }
+        super.onImageAvailable(reader);
     }
 
     @Override
@@ -116,6 +152,9 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         ++timestamp;
         final long currTimestamp = timestamp;
 
+        if(mPendingPause != null){
+            return;
+        }
         // No mutex needed as this method is not reentrant.
         if (computingDetection) {
             readyForNextImage();
@@ -126,6 +165,11 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         mOpenposeDebug.start(OpenposeDebug.TYPE_PREPARE);
 
         rgbFrameBitmap.setPixels(getRgbBytes(), 0, previewWidth, 0, 0, previewWidth, previewHeight);
+        if(mOnPauseCalled){
+            System.out.println("processImage >>> mOnPauseCalled = true");
+            doWithPause();
+            return;
+        }
         if(debugCallback != null){
             debugCallback.debugRawImage(rgbFrameBitmap);
         }
@@ -152,16 +196,24 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         mHandleInfo.finalHeight = MP_INPUT_SIZE;
         mOpenposeDebug.end();
 
+        if(mPendingPause != null){
+            return;
+        }
+        System.out.println("------- runInBackground ----");
         runInBackground(
                 new Runnable() {
                     @Override
                     public void run() {
-                        //LOGGER.i("Running detection on image " + currTimestamp);
+                        if(mPendingPause != null){
+                            System.out.println("mPendingPause != null");
+                            return;
+                        }
+                        System.out.println("-------------------- openpose start >>>>");
                         mOpenposeDebug.start(OpenposeDebug.TYPE_RECOGNIZE);
                         final List<Recognition> results = detector.inference(croppedBitmap);
                         mOpenposeDebug.end();
                         //never for debug now
-                        List<Human> humans = results.get(0).humans;
+                        List<Human> humans = !results.isEmpty() ? results.get(0).humans : Collections.<Human>emptyList();
                         if(humans.size() > 0){
                             //for openpose no-debug. must set callback
                             mOpenposeDebug.start(OpenposeDebug.TYPE_ALGORITHM);
@@ -185,9 +237,33 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
                            // Toaster.show(mActivity,  R.string.lib_openpose_recognize_failed, Gravity.CENTER);
                         }
                         mOpenposeDebug.printCostInfo();
-                        computingDetection = false;
+                        doWithPause();
+                        System.out.println("-------------------- openpose end >>>>");
                     }
                 });
+    }
+    private void doWithPause(){
+        System.out.println(":::::::: doWithPause ------------");
+        //need release graph
+        if(mPendingPause != null && mOnPauseCalled){
+            mOnPauseCalled = false;
+            mActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println("releaseGraph start");
+                    detector.releaseGraph();
+                    System.out.println("releaseGraph end");
+                    if(mShouldDestroy){
+                        onDestroy();
+                    }
+                    mPendingPause.run();
+                    mPendingPause = null;
+                    computingDetection = false;
+                }
+            });
+        }else {
+            computingDetection = false;
+        }
     }
 
     @Override
@@ -347,6 +423,10 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
         }
     }
 
+    public void setPendingPause(Runnable mPendingPause) {
+        this.mPendingPause = mPendingPause;
+    }
+
     @Override
     public void setDebug(final boolean debug) {
         super.setDebug(debug);
@@ -367,8 +447,25 @@ public class OpenposeCameraManager extends AbsOpenposeCameraManager{
 
     @Override
     public synchronized void onPause() {
+        if(mPermissionRequesting){
+            return;
+        }
+        System.out.println("onPause: processing = " + isProcessing());
+        mOnPauseCalled = true;
+        //需要先释放required 的 image
+        if(isProcessingFrame){
+            readyForNextImage();
+        }
+        if(isProcessing()){
+            unregisterReceiver();
+            pause();
+            return;
+        }
+        System.out.println("real onPause");
         unregisterReceiver();
         super.onPause();
+        System.out.println("real onPause ok");
+        mOnPauseCalled = false;
     }
 
     @Override

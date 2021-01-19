@@ -108,7 +108,13 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mApi = OpenposeApiFactory.newApi(this);
         overlap_debug.addCallback(debugCB);
 
-        mOCM = new OpenposeCameraManager(this, R.id.container);
+        mOCM = new OpenposeCameraManager(this, R.id.container){
+            @Override
+            protected void onPermissionGranted(Runnable next) {
+                mPermissionOk = true;
+                super.onPermissionGranted(next);
+            }
+        };
         mOCM.setOpenposeApi(mApi);
         mOCM.setCallback(this);
         mOCM.setDebugCallback(debugCB);
@@ -164,14 +170,24 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(mOCM != null){
-            mOCM.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if(prepared){
+            if(mOCM != null){
+                mOCM.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            }
+        }else {
+            mHelper.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
     @Override
     protected void onPause() {
         if(mOCM != null){
+            mOCM.setPendingPause(new Runnable() {
+                @Override
+                public void run() {
+                    System.err.println("-----------setPendingPause >>> onPause ----------");
+                }
+            });
             mOCM.onPause();
         }
         super.onPause();
@@ -207,10 +223,6 @@ public class MainActivity extends AppCompatActivity implements OpenposeDetector.
         mVg_imgs.setVisibility(View.GONE);
         mVg_camera.setVisibility(View.VISIBLE);
 
-        /*if(mOCM == null){
-            mOCM = new OpenposeCameraManager(this, R.id.container);
-            mOCM.setDesiredPreviewFrameSize(1920 , 1080);
-        }*/
         mOCM.show();
     }
 
